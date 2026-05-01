@@ -2,11 +2,40 @@
 
 from __future__ import annotations
 
+import warnings
+
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 import yfinance_cache as yfc
+
+# Upstream deprecation warnings from yfinance / yfinance_cache. They originate
+# inside the libraries (Timestamp.utcnow, lowercase 'd' offset alias, old proxy
+# and raise_errors kwargs) and can only be silenced here until those packages
+# are updated. These filters must run AFTER `import yfinance*` because yfinance
+# installs its own 'default' filter for DeprecationWarning at import time and
+# warnings.filterwarnings inserts at the front of the list — last writer wins.
+warnings.filterwarnings(
+    "ignore",
+    message=r"Timestamp\.utcnow is deprecated.*",
+    module=r"yfinance_cache\..*",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=r"'d' is deprecated.*",
+    module=r"yfinance_cache\..*",
+)
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=r"Set proxy via new config control.*",
+)
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=r"'raise_errors' deprecated.*",
+)
 
 st.set_page_config(
     page_title="Stock Log-Returns",
