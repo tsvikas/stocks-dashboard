@@ -146,7 +146,7 @@ def load_prices(
 ) -> tuple[pd.DataFrame, dict[str, str]]:
     period, slice_years, resample_rule = LOOKBACKS[lookback_key]
     cutoff = (
-        pd.Timestamp.utcnow().tz_localize(None) - pd.DateOffset(years=slice_years)
+        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
         if slice_years is not None
         else None
     )
