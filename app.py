@@ -201,6 +201,16 @@ QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
         ],
     ),
     (
+        "Treasury yields (rates, not prices)",
+        False,
+        [
+            ("^IRX", "13-week T-bill yield (1962)", False),
+            ("^FVX", "5Y Treasury yield (1962)", False),
+            ("^TNX", "10Y Treasury yield (1962)", False),
+            ("^TYX", "30Y Treasury yield (1977)", False),
+        ],
+    ),
+    (
         "Crypto",
         False,
         [
