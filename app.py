@@ -7,54 +7,6 @@ import pandas as pd
 import streamlit as st
 import yfinance_cache as yfc
 
-st.set_page_config(
-    page_title="Stock Log-Returns",
-    page_icon="\N{CHART WITH UPWARDS TREND}",
-    layout="wide",
-)
-
-st.markdown(
-    """
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-      html, body, [data-testid="stAppViewContainer"] {
-        background-color: #f7f3ec;
-      }
-      [data-testid="stSidebar"] {
-        background-color: #efe9dd;
-        border-right: 1px solid #d8cfbd;
-      }
-      h1.editorial-title {
-        font-family: 'Fraunces', Georgia, serif;
-        font-style: italic;
-        font-weight: 600;
-        font-size: 2.6rem;
-        color: #1f1b16;
-        margin-bottom: 0;
-      }
-      p.editorial-sub {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
-        color: #6b5e49;
-        margin-top: 0.2rem;
-        letter-spacing: 0.04em;
-      }
-      code, .stMarkdown pre, [data-testid="stMetricValue"] {
-        font-family: 'JetBrains Mono', monospace !important;
-      }
-      hr.hairline {
-        border: 0;
-        border-top: 1px solid #d8cfbd;
-        margin: 0.6rem 0 1rem 0;
-      }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-
 # ---- Lookback periods ---------------------------------------------------- #
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
 # For unsupported ranges we fetch "max" and slice client-side.
@@ -202,104 +154,150 @@ def parse_custom(text: str) -> list[str]:
     return out
 
 
-# ---- Sidebar ------------------------------------------------------------- #
-with st.sidebar:
-    st.markdown("### Lookback")
-    lookback_key = st.radio(
-        "Lookback",
-        list(LOOKBACKS.keys()),
-        index=3,
-        horizontal=True,
-        label_visibility="collapsed",
+if __name__ == "__main__":
+    st.set_page_config(
+        page_title="Stock Log-Returns",
+        page_icon="\N{CHART WITH UPWARDS TREND}",
+        layout="wide",
     )
 
-    st.markdown("### Quick tickers")
-    selected_quick: list[str] = []
-    for group_name, items in QUICK_TICKERS:
-        with st.expander(group_name, expanded=True):
-            for sym, label, default in items:
-                star = " \N{BLACK STAR}" if default else ""
-                checked = st.checkbox(
-                    f"{sym}{star} — {label}",
-                    value=default,
-                    key=f"chk_{sym}",
-                )
-                if checked:
-                    selected_quick.append(sym)
-
-    st.markdown("### Custom tickers")
-    custom_text = st.text_input(
-        "Custom tickers",
-        placeholder="e.g. AMD, ASML, ^GSPC",
-        label_visibility="collapsed",
-    )
-    custom = parse_custom(custom_text)
-
-    st.markdown("### Anchor")
-    anchor = st.radio(
-        "Anchor",
-        ["Start", "End"],
-        index=0,
-        horizontal=True,
-        label_visibility="collapsed",
-        help="Start: line begins at 0. End: line ends at 0.",
-    )
-
-    st.markdown("### Y-axis units")
-    units = st.radio(
-        "Units",
-        ["ln", "dB", "factor"],
-        index=0,
-        horizontal=True,
-        label_visibility="collapsed",
-        help="ln: natural log return. dB: 10·log10. factor: P_t / P_ref.",
-    )
-
-
-# ---- Main ---------------------------------------------------------------- #
-st.markdown(
-    "<h1 class='editorial-title'>Stock log-returns</h1>"
-    f"<p class='editorial-sub'>{lookback_key} · anchor: {anchor.lower()} · units: {units}</p>"
-    "<hr class='hairline'/>",
-    unsafe_allow_html=True,
-)
-
-# Merge quick + custom, preserving order, dedup case-insensitively.
-seen: set[str] = set()
-tickers: list[str] = []
-for t in [*selected_quick, *custom]:
-    key = t.upper()
-    if key not in seen:
-        seen.add(key)
-        tickers.append(key)
-
-if not tickers:
-    st.info("Pick at least one ticker from the sidebar.")
-    st.stop()
-
-prices, errors = load_prices(tuple(tickers), lookback_key)
-frame = transform(prices, anchor, units)
-
-if errors:
-    st.warning(
-        " · ".join(f"**{t}**: {msg}" for t, msg in errors.items()),
-        icon="\N{WARNING SIGN}",
+    st.markdown(
+        """
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+        <style>
+          html, body, [data-testid="stAppViewContainer"] {
+            background-color: #f7f3ec;
+          }
+          [data-testid="stSidebar"] {
+            background-color: #efe9dd;
+            border-right: 1px solid #d8cfbd;
+          }
+          h1.editorial-title {
+            font-family: 'Fraunces', Georgia, serif;
+            font-style: italic;
+            font-weight: 600;
+            font-size: 2.6rem;
+            color: #1f1b16;
+            margin-bottom: 0;
+          }
+          p.editorial-sub {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #6b5e49;
+            margin-top: 0.2rem;
+            letter-spacing: 0.04em;
+          }
+          code, .stMarkdown pre, [data-testid="stMetricValue"] {
+            font-family: 'JetBrains Mono', monospace !important;
+          }
+          hr.hairline {
+            border: 0;
+            border-top: 1px solid #d8cfbd;
+            margin: 0.6rem 0 1rem 0;
+          }
+        </style>
+        """,
+        unsafe_allow_html=True,
     )
 
-if frame.empty:
-    st.error("No data available for the selected tickers and window.")
-    st.stop()
+    # ---- Sidebar --------------------------------------------------------- #
+    with st.sidebar:
+        st.markdown("### Lookback")
+        lookback_key = st.radio(
+            "Lookback",
+            list(LOOKBACKS.keys()),
+            index=3,
+            horizontal=True,
+            label_visibility="collapsed",
+        )
 
-st.line_chart(frame, height=520)
+        st.markdown("### Quick tickers")
+        selected_quick: list[str] = []
+        for group_name, items in QUICK_TICKERS:
+            with st.expander(group_name, expanded=True):
+                for sym, label, default in items:
+                    star = " \N{BLACK STAR}" if default else ""
+                    checked = st.checkbox(
+                        f"{sym}{star} — {label}",
+                        value=default,
+                        key=f"chk_{sym}",
+                    )
+                    if checked:
+                        selected_quick.append(sym)
 
-with st.expander("Latest values"):
-    last = frame.dropna(how="all").iloc[-1].sort_values(ascending=False)
-    st.dataframe(
-        last.rename("value").to_frame().style.format("{:.4f}"),
-        use_container_width=True,
+        st.markdown("### Custom tickers")
+        custom_text = st.text_input(
+            "Custom tickers",
+            placeholder="e.g. AMD, ASML, ^GSPC",
+            label_visibility="collapsed",
+        )
+        custom = parse_custom(custom_text)
+
+        st.markdown("### Anchor")
+        anchor = st.radio(
+            "Anchor",
+            ["Start", "End"],
+            index=0,
+            horizontal=True,
+            label_visibility="collapsed",
+            help="Start: line begins at 0. End: line ends at 0.",
+        )
+
+        st.markdown("### Y-axis units")
+        units = st.radio(
+            "Units",
+            ["ln", "dB", "factor"],
+            index=0,
+            horizontal=True,
+            label_visibility="collapsed",
+            help="ln: natural log return. dB: 10·log10. factor: P_t / P_ref.",
+        )
+
+    # ---- Main ------------------------------------------------------------ #
+    st.markdown(
+        "<h1 class='editorial-title'>Stock log-returns</h1>"
+        f"<p class='editorial-sub'>{lookback_key} · anchor: {anchor.lower()} · units: {units}</p>"
+        "<hr class='hairline'/>",
+        unsafe_allow_html=True,
     )
 
-st.caption(
-    f"Data via yfinance-cache · {len(frame.columns)} series · "
-    f"{frame.index.min():%Y-%m-%d} → {frame.index.max():%Y-%m-%d}"
-)
+    seen: set[str] = set()
+    tickers: list[str] = []
+    for t in [*selected_quick, *custom]:
+        key = t.upper()
+        if key not in seen:
+            seen.add(key)
+            tickers.append(key)
+
+    if not tickers:
+        st.info("Pick at least one ticker from the sidebar.")
+        st.stop()
+
+    prices, errors = load_prices(tuple(tickers), lookback_key)
+    frame = transform(prices, anchor, units)
+
+    if errors:
+        st.warning(
+            " · ".join(f"**{t}**: {msg}" for t, msg in errors.items()),
+            icon="\N{WARNING SIGN}",
+        )
+
+    if frame.empty:
+        st.error("No data available for the selected tickers and window.")
+        st.stop()
+
+    st.line_chart(frame, height=520)
+
+    with st.expander("Latest values"):
+        last = frame.dropna(how="all").iloc[-1].sort_values(ascending=False)
+        st.dataframe(
+            last.rename("value").to_frame().style.format("{:.4f}"),
+            use_container_width=True,
+        )
+
+    st.caption(
+        f"Data via yfinance-cache · {len(frame.columns)} series · "
+        f"{frame.index.min():%Y-%m-%d} → {frame.index.max():%Y-%m-%d}"
+    )
