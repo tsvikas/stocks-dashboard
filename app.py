@@ -73,9 +73,10 @@ LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
     "MAX": ("max", None, "ME"),
 }
 
-QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
+QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
     (
         "Single names",
+        True,
         [
             ("NVDA", "NVIDIA", False),
             ("AAPL", "Apple", False),
@@ -87,19 +88,96 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
         ],
     ),
     (
-        "Indices / broad",
+        "US indices (long history)",
+        True,
+        [
+            ("^GSPC", "S&P 500 (1927)", False),
+            ("^NYA", "NYSE Composite (1965)", False),
+            ("^IXIC", "NASDAQ Composite (1971)", False),
+            ("^RUT", "Russell 2000 (1987)", False),
+            ("^DJI", "Dow Jones (1992)", False),
+        ],
+    ),
+    (
+        "US ETFs",
+        False,
         [
             ("SPY", "S&P 500", True),
             ("QQQ", "Nasdaq 100", False),
             ("QLD", "Nasdaq 100 ×2", False),
             ("TQQQ", "Nasdaq 100 ×3", False),
-            ("URTH", "MSCI World", True),
-            ("ACWI", "All-Country World", True),
             ("VTI", "US Total Market", False),
         ],
     ),
     (
+        "World / global",
+        True,
+        [
+            ("URTH", "MSCI World — developed (2012)", True),
+            ("ACWI", "MSCI All-Country World (2008)", True),
+            ("VT", "Vanguard Total World (2008)", False),
+            ("EFA", "Developed ex-US (2001)", False),
+            ("EEM", "Emerging Markets (2003)", False),
+            ("VEU", "FTSE All-World ex-US (2007)", False),
+        ],
+    ),
+    (
+        "Europe indices",
+        False,
+        [
+            ("^STOXX50E", "Euro Stoxx 50", False),
+            ("^STOXX", "STOXX Europe 600", False),
+            ("^FTSE", "FTSE 100 — UK", False),
+            ("^GDAXI", "DAX — Germany", False),
+            ("^FCHI", "CAC 40 — France", False),
+            ("^SSMI", "SMI — Switzerland", False),
+            ("^AEX", "AEX — Netherlands", False),
+            ("^IBEX", "IBEX 35 — Spain", False),
+            ("FTSEMIB.MI", "FTSE MIB — Italy", False),
+            ("^OMX", "OMX Stockholm 30 — Sweden", False),
+        ],
+    ),
+    (
+        "Asia indices",
+        False,
+        [
+            ("^N225", "Nikkei 225 — Japan", False),
+            ("^HSI", "Hang Seng — Hong Kong", False),
+            ("000001.SS", "SSE Composite — Shanghai", False),
+            ("399001.SZ", "SZSE Component — Shenzhen", False),
+            ("^KS11", "KOSPI — South Korea", False),
+            ("^TWII", "TAIEX — Taiwan", False),
+            ("^BSESN", "BSE SENSEX — India", False),
+            ("^NSEI", "NIFTY 50 — India", False),
+            ("^STI", "Straits Times — Singapore", False),
+        ],
+    ),
+    (
+        "Pacific & Americas",
+        False,
+        [
+            ("^AORD", "All Ordinaries — Australia", False),
+            ("^AXJO", "S&P/ASX 200 — Australia", False),
+            ("^NZ50", "NZX 50 — New Zealand", False),
+            ("^GSPTSE", "S&P/TSX Composite — Canada", False),
+            ("^BVSP", "Bovespa — Brazil", False),
+            ("^MXX", "IPC — Mexico", False),
+            ("^MERV", "MERVAL — Argentina", False),
+        ],
+    ),
+    (
+        "Middle East & Africa",
+        False,
+        [
+            ("TA35.TA", "TA-35 — Israel", False),
+            ("TA125.TA", "TA-125 — Israel", False),
+            ("^TASI.SR", "Tadawul — Saudi Arabia", False),
+            ("^JN0U.JO", "FTSE/JSE Top 40 — South Africa", False),
+        ],
+    ),
+    (
         "Commodities",
+        False,
         [
             ("GLD", "Gold", False),
             ("SLV", "Silver", False),
@@ -107,12 +185,14 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
     ),
     (
         "Bonds",
+        False,
         [
             ("TLT", "20Y Treasuries", False),
         ],
     ),
     (
         "Crypto",
+        False,
         [
             ("BTC-USD", "Bitcoin", False),
             ("ETH-USD", "Ethereum", False),
@@ -217,8 +297,8 @@ with st.sidebar:
 
     st.markdown("### Quick tickers")
     selected_quick: list[str] = []
-    for group_name, items in QUICK_TICKERS:
-        with st.expander(group_name, expanded=True):
+    for group_name, expanded, items in QUICK_TICKERS:
+        with st.expander(group_name, expanded=expanded):
             for sym, label, default in items:
                 checked = st.checkbox(
                     f"{sym} — {label}",
