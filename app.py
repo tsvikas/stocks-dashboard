@@ -278,9 +278,7 @@ if not tickers:
     st.stop()
 
 with st.spinner("Fetching prices…"):
-    frame, errors = build_chart_frame(
-        tuple(tickers), lookback_key, anchor, units
-    )
+    frame, errors = build_chart_frame(tuple(tickers), lookback_key, anchor, units)
 
 if errors:
     st.warning(

@@ -13,8 +13,8 @@ That's it. `uv` resolves and installs everything from `pyproject.toml` / `uv.loc
 ## Deploy on Streamlit Community Cloud
 
 1. Push this repo to GitHub.
-2. On [share.streamlit.io](https://share.streamlit.io), point a new app at the repo, branch, and `app.py`.
-3. Streamlit Cloud detects `pyproject.toml` + `uv.lock` and installs via uv automatically.
+1. On [share.streamlit.io](https://share.streamlit.io), point a new app at the repo, branch, and `app.py`.
+1. Streamlit Cloud detects `pyproject.toml` + `uv.lock` and installs via uv automatically.
 
 ## Controls
 
