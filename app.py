@@ -73,9 +73,10 @@ LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
     "MAX": ("max", None, "ME"),
 }
 
-QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
+QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
     (
         "Single names",
+        True,
         [
             ("NVDA", "NVIDIA", False),
             ("AAPL", "Apple", False),
@@ -87,32 +88,126 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
         ],
     ),
     (
-        "Indices / broad",
+        "US indices (long history)",
+        True,
         [
-            ("SPY", "S&P 500", True),
+            ("^GSPC", "S&P 500 (1927)", True),
+            ("^NYA", "NYSE Composite (1965)", False),
+            ("^IXIC", "NASDAQ Composite (1971)", False),
+            ("^RUT", "Russell 2000 (1987)", False),
+            ("^DJI", "Dow Jones (1992)", False),
+        ],
+    ),
+    (
+        "US ETFs",
+        False,
+        [
+            ("SPY", "S&P 500", False),
             ("QQQ", "Nasdaq 100", False),
             ("QLD", "Nasdaq 100 ×2", False),
             ("TQQQ", "Nasdaq 100 ×3", False),
-            ("URTH", "MSCI World", True),
-            ("ACWI", "All-Country World", True),
             ("VTI", "US Total Market", False),
         ],
     ),
     (
-        "Commodities",
+        "World / global",
+        True,
         [
-            ("GLD", "Gold", False),
-            ("SLV", "Silver", False),
+            ("^990100-USD-STRD", "MSCI World index — developed", False),
+            ("^892400-USD-STRD", "MSCI ACWI index — all-country", False),
+            ("^991000-USD-STRD", "MSCI World ex USA index", False),
+            ("AW01.FGI", "FTSE All-World index", False),
+            ("^SPG1200", "S&P Global 1200 index", False),
+            ("URTH", "MSCI World ETF — developed (2012)", True),
+            ("ACWI", "MSCI ACWI ETF — all-country (2008)", True),
+            ("VT", "Vanguard Total World ETF (2008)", False),
+            ("EFA", "Developed ex-US ETF (2001)", False),
+            ("EEM", "Emerging Markets ETF (2003)", False),
+            ("VEU", "FTSE All-World ex-US ETF (2007)", False),
+        ],
+    ),
+    (
+        "Europe indices",
+        False,
+        [
+            ("^STOXX50E", "Euro Stoxx 50", False),
+            ("^STOXX", "STOXX Europe 600", False),
+            ("^FTSE", "FTSE 100 — UK", False),
+            ("^GDAXI", "DAX — Germany", False),
+            ("^FCHI", "CAC 40 — France", False),
+            ("^SSMI", "SMI — Switzerland", False),
+            ("^AEX", "AEX — Netherlands", False),
+            ("^IBEX", "IBEX 35 — Spain", False),
+            ("FTSEMIB.MI", "FTSE MIB — Italy", False),
+            ("^OMX", "OMX Stockholm 30 — Sweden", False),
+        ],
+    ),
+    (
+        "Asia indices",
+        False,
+        [
+            ("^N225", "Nikkei 225 — Japan", False),
+            ("^HSI", "Hang Seng — Hong Kong", False),
+            ("000001.SS", "SSE Composite — Shanghai", False),
+            ("399001.SZ", "SZSE Component — Shenzhen", False),
+            ("^KS11", "KOSPI — South Korea", False),
+            ("^TWII", "TAIEX — Taiwan", False),
+            ("^BSESN", "BSE SENSEX — India", False),
+            ("^NSEI", "NIFTY 50 — India", False),
+            ("^STI", "Straits Times — Singapore", False),
+        ],
+    ),
+    (
+        "Pacific & Americas",
+        False,
+        [
+            ("^AORD", "All Ordinaries — Australia", False),
+            ("^AXJO", "S&P/ASX 200 — Australia", False),
+            ("^NZ50", "NZX 50 — New Zealand", False),
+            ("^GSPTSE", "S&P/TSX Composite — Canada", False),
+            ("^BVSP", "Bovespa — Brazil", False),
+            ("^MXX", "IPC — Mexico", False),
+            ("^MERV", "MERVAL — Argentina", False),
+        ],
+    ),
+    (
+        "Middle East & Africa",
+        False,
+        [
+            ("TA35.TA", "TA-35 — Israel", False),
+            ("TA125.TA", "TA-125 — Israel", False),
+            ("^TASI.SR", "Tadawul — Saudi Arabia", False),
+            ("^JN0U.JO", "FTSE/JSE Top 40 — South Africa", False),
+        ],
+    ),
+    (
+        "Commodities",
+        False,
+        [
+            ("^XAU", "PHLX Gold/Silver miners — equity (1983)", False),
+            ("GC=F", "Gold futures (2000)", False),
+            ("SI=F", "Silver futures (2000)", False),
+            ("CL=F", "WTI crude futures (2000)", False),
+            ("GLD", "Gold ETF (2004)", False),
+            ("SLV", "Silver ETF (2006)", False),
+            ("DBC", "Broad commodities ETF (2006)", False),
         ],
     ),
     (
         "Bonds",
+        False,
         [
-            ("TLT", "20Y Treasuries", False),
+            ("TLT", "20Y Treasuries (2002)", False),
+            ("IEF", "7-10Y Treasuries (2002)", False),
+            ("SHY", "1-3Y Treasuries (2002)", False),
+            ("AGG", "US Aggregate Bond (2003)", False),
+            ("LQD", "Investment-grade corp (2002)", False),
+            ("HYG", "High-yield corp (2007)", False),
         ],
     ),
     (
         "Crypto",
+        False,
         [
             ("BTC-USD", "Bitcoin", False),
             ("ETH-USD", "Ethereum", False),
@@ -217,8 +312,8 @@ with st.sidebar:
 
     st.markdown("### Quick tickers")
     selected_quick: list[str] = []
-    for group_name, items in QUICK_TICKERS:
-        with st.expander(group_name, expanded=True):
+    for group_name, expanded, items in QUICK_TICKERS:
+        with st.expander(group_name, expanded=expanded):
             for sym, label, default in items:
                 checked = st.checkbox(
                     f"{sym} — {label}",
