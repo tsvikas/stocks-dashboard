@@ -9,3 +9,6 @@ dependencies = [
     "pandas>=2.2",
     "numpy>=1.26",
 ]
+
+[tool.codespell]
+ignore-words-list = "hsi"
