@@ -284,9 +284,11 @@ if frame.empty:
     st.stop()
 
 chart_df = frame.reset_index()
-chart_df = chart_df.rename(columns={chart_df.columns[0]: "Date"}).melt(
-    id_vars="Date", var_name="Ticker", value_name="Value"
-).dropna()
+chart_df = (
+    chart_df.rename(columns={chart_df.columns[0]: "Date"})
+    .melt(id_vars="Date", var_name="Ticker", value_name="Value")
+    .dropna()
+)
 
 y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
 chart = (
