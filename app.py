@@ -304,8 +304,8 @@ chart = (
 st.altair_chart(chart, width="stretch")
 
 UNIT_HELP = {
-    "ln": "+0.1 ≈ +10%<br>+0.5 ≈ +65%<br>+0.7 ≈ ×2<br>+1.0 ≈ ×2.7<br>+2.3 ≈ ×10",
-    "dB": "+1 dB ≈ +25%<br>+3 dB ≈ ×2<br>+10 dB = ×10",
+    "ln": "-0.5 ≈ -40%<br>-0.1 ≈ -10%<br>+0.1 ≈ +10%<br>+0.5 ≈ +65%<br>+0.7 ≈ ×2<br>+1.0 ≈ ×2.7<br>+2.3 ≈ ×10",
+    "dB": "-1 dB ≈ -20%<br>+1 dB ≈ +25%<br>+3 dB ≈ ×2<br>+10 dB = ×10",
     "ratio": "1.0 = unchanged<br>2.0 = ×2<br>0.5 = ÷2",
 }
 st.markdown(UNIT_HELP[units], unsafe_allow_html=True)
