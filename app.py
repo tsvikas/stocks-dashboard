@@ -91,7 +91,7 @@ QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
         "US indices (long history)",
         True,
         [
-            ("^GSPC", "S&P 500 (1927)", False),
+            ("^GSPC", "S&P 500 (1927)", True),
             ("^NYA", "NYSE Composite (1965)", False),
             ("^IXIC", "NASDAQ Composite (1971)", False),
             ("^RUT", "Russell 2000 (1987)", False),
@@ -102,7 +102,7 @@ QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
         "US ETFs",
         False,
         [
-            ("SPY", "S&P 500", True),
+            ("SPY", "S&P 500", False),
             ("QQQ", "Nasdaq 100", False),
             ("QLD", "Nasdaq 100 ×2", False),
             ("TQQQ", "Nasdaq 100 ×3", False),
@@ -179,15 +179,25 @@ QUICK_TICKERS: list[tuple[str, bool, list[tuple[str, str, bool]]]] = [
         "Commodities",
         False,
         [
-            ("GLD", "Gold", False),
-            ("SLV", "Silver", False),
+            ("^XAU", "PHLX Gold/Silver miners — equity (1983)", False),
+            ("GC=F", "Gold futures (2000)", False),
+            ("SI=F", "Silver futures (2000)", False),
+            ("CL=F", "WTI crude futures (2000)", False),
+            ("GLD", "Gold ETF (2004)", False),
+            ("SLV", "Silver ETF (2006)", False),
+            ("DBC", "Broad commodities ETF (2006)", False),
         ],
     ),
     (
         "Bonds",
         False,
         [
-            ("TLT", "20Y Treasuries", False),
+            ("TLT", "20Y Treasuries (2002)", False),
+            ("IEF", "7-10Y Treasuries (2002)", False),
+            ("SHY", "1-3Y Treasuries (2002)", False),
+            ("AGG", "US Aggregate Bond (2003)", False),
+            ("LQD", "Investment-grade corp (2002)", False),
+            ("HYG", "High-yield corp (2007)", False),
         ],
     ),
     (
