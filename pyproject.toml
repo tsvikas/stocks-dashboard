@@ -1,0 +1,11 @@
+[project]
+name = "stocks-dashboard"
+version = "0.1.0"
+description = "Streamlit dashboard for stock log-returns"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "streamlit>=1.40",
+    "yfinance-cache>=0.6",
+    "pandas>=2.2",
+    "numpy>=1.26",
+]
