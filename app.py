@@ -77,7 +77,7 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
     (
         "Single names",
         [
-            ("NVDA", "NVIDIA", True),
+            ("NVDA", "NVIDIA", False),
             ("AAPL", "Apple", False),
             ("MSFT", "Microsoft", False),
             ("GOOGL", "Alphabet", False),
@@ -91,15 +91,17 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
         [
             ("SPY", "S&P 500", True),
             ("QQQ", "Nasdaq 100", False),
+            ("QLD", "Nasdaq 100 ×2", False),
+            ("TQQQ", "Nasdaq 100 ×3", False),
             ("URTH", "MSCI World", True),
-            ("ACWI", "All-Country World", False),
+            ("ACWI", "All-Country World", True),
             ("VTI", "US Total Market", False),
         ],
     ),
     (
         "Commodities",
         [
-            ("GLD", "Gold", True),
+            ("GLD", "Gold", False),
             ("SLV", "Silver", False),
         ],
     ),
@@ -238,13 +240,13 @@ with ctl_lookback:
     lookback_key = st.selectbox(
         "Lookback",
         list(LOOKBACKS.keys()),
-        index=3,
+        index=list(LOOKBACKS).index("20Y"),
     )
 with ctl_anchor:
     anchor = st.radio(
         "Anchor",
         ["Start", "End"],
-        index=0,
+        index=1,
         horizontal=True,
         help="Start: line begins at 0. End: line ends at 0.",
     )
@@ -252,7 +254,7 @@ with ctl_units:
     units = st.radio(
         "Y-axis units",
         ["ln", "dB", "ratio"],
-        index=0,
+        index=1,
         horizontal=True,
         help="ln: natural log return. dB: 10·log10. ratio: P_t / P_ref (log y-scale).",
     )
