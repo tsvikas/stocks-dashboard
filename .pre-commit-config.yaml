@@ -1,0 +1,108 @@
+minimum_pre_commit_version: "3.2"
+exclude: "^$"
+ci:
+  skip: []
+  autoupdate_schedule: quarterly
+
+repos:
+  # General hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # Filesystem
+      - id: check-illegal-windows-names
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      # Git related
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: check-vcs-permalinks
+      - id: forbid-submodules  # use subtree
+      # Security
+      - id: detect-private-key
+      # Text encoding/formatting
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+      # Python
+      - id: check-ast
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: name-tests-test
+        args: [--pytest-test-first]
+      - id: requirements-txt-fixer
+      # Symlinks
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      # File validation
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      # File formatting
+      - id: pretty-format-json
+        exclude_types: [jupyter]
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      # Python files
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-check-mock-methods
+      - id: python-no-eval
+      - id: python-no-log-warn
+      - id: python-use-type-annotations
+      # UTF-8 encoding
+      - id: text-unicode-replacement-char
+
+  # Spell checking
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.2
+    hooks:
+      - id: codespell
+
+  # Markdown files
+  - repo: https://github.com/hukkin/mdformat
+    rev: 1.0.0
+    hooks:
+      - id: mdformat
+        additional_dependencies:
+          - mdformat-gfm
+          - mdformat-footnote
+          - mdformat-gfm-alerts
+
+  # Python files
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.9
+    hooks:
+      - id: ruff
+        alias: ruff-isort
+        name: ruff isort
+        args: [--select, I001, --fix]
+      - id: ruff-format
+      - id: ruff
+        alias: ruff-check
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.20.0
+    hooks:
+      - id: mypy
+
+  # Jupyter notebook files
+  - repo: local
+    hooks:
+      - id: forbid-ipynb  # use jupytext
+        name: forbid ipynb
+        entry: filenames must not end in .ipynb
+        language: fail
+        types: [jupyter]
+
+  # YAML files
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+
+  # Project-specific custom hooks
