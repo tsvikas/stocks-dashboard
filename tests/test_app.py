@@ -41,8 +41,8 @@ def test_transform_db_is_ln_scaled_by_10_over_ln10() -> None:
     np.testing.assert_allclose(db_frame.to_numpy(), ln_frame.to_numpy() * scale)
 
 
-def test_transform_factor_units_returns_ratio() -> None:
-    frame = transform(_prices({"A": [10.0, 12.0, 15.0]}), "Start", "factor")
+def test_transform_ratio_units_returns_price_over_ref() -> None:
+    frame = transform(_prices({"A": [10.0, 12.0, 15.0]}), "Start", "ratio")
     np.testing.assert_allclose(frame["A"].to_numpy(), [1.0, 1.2, 1.5])
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -28,7 +29,7 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
     (
         "Single names",
         [
-            ("NVDA", "NVIDIA", True),
+            ("NVDA", "NVIDIA", False),
             ("AAPL", "Apple", False),
             ("MSFT", "Microsoft", False),
             ("GOOGL", "Alphabet", False),
@@ -42,15 +43,17 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
         [
             ("SPY", "S&P 500", True),
             ("QQQ", "Nasdaq 100", False),
+            ("QLD", "Nasdaq 100 ×2", False),
+            ("TQQQ", "Nasdaq 100 ×3", False),
             ("URTH", "MSCI World", True),
-            ("ACWI", "All-Country World", False),
+            ("ACWI", "All-Country World", True),
             ("VTI", "US Total Market", False),
         ],
     ),
     (
         "Commodities",
         [
-            ("GLD", "Gold", True),
+            ("GLD", "Gold", False),
             ("SLV", "Silver", False),
         ],
     ),
@@ -202,31 +205,8 @@ if __name__ == "__main__":
         unsafe_allow_html=True,
     )
 
-    # ---- Sidebar --------------------------------------------------------- #
+    # ---- Sidebar (tickers only) ----------------------------------------- #
     with st.sidebar:
-        st.markdown("### Lookback")
-        lookback_key = st.radio(
-            "Lookback",
-            list(LOOKBACKS.keys()),
-            index=3,
-            horizontal=True,
-            label_visibility="collapsed",
-        )
-
-        st.markdown("### Quick tickers")
-        selected_quick: list[str] = []
-        for group_name, items in QUICK_TICKERS:
-            with st.expander(group_name, expanded=True):
-                for sym, label, default in items:
-                    star = " \N{BLACK STAR}" if default else ""
-                    checked = st.checkbox(
-                        f"{sym}{star} — {label}",
-                        value=default,
-                        key=f"chk_{sym}",
-                    )
-                    if checked:
-                        selected_quick.append(sym)
-
         st.markdown("### Custom tickers")
         custom_text = st.text_input(
             "Custom tickers",
@@ -235,33 +215,48 @@ if __name__ == "__main__":
         )
         custom = parse_custom(custom_text)
 
-        st.markdown("### Anchor")
-        anchor = st.radio(
-            "Anchor",
-            ["Start", "End"],
-            index=0,
-            horizontal=True,
-            label_visibility="collapsed",
-            help="Start: line begins at 0. End: line ends at 0.",
-        )
-
-        st.markdown("### Y-axis units")
-        units = st.radio(
-            "Units",
-            ["ln", "dB", "factor"],
-            index=0,
-            horizontal=True,
-            label_visibility="collapsed",
-            help="ln: natural log return. dB: 10·log10. factor: P_t / P_ref.",
-        )
+        st.markdown("### Quick tickers")
+        selected_quick: list[str] = []
+        for group_name, items in QUICK_TICKERS:
+            with st.expander(group_name, expanded=True):
+                for sym, label, default in items:
+                    checked = st.checkbox(
+                        f"{sym} — {label}",
+                        value=default,
+                        key=f"chk_{sym}",
+                    )
+                    if checked:
+                        selected_quick.append(sym)
 
     # ---- Main ------------------------------------------------------------ #
     st.markdown(
-        "<h1 class='editorial-title'>Stock log-returns</h1>"
-        f"<p class='editorial-sub'>{lookback_key} · anchor: {anchor.lower()} · units: {units}</p>"
-        "<hr class='hairline'/>",
+        "<h1 class='editorial-title'>Stock log-returns</h1><hr class='hairline'/>",
         unsafe_allow_html=True,
     )
+
+    ctl_lookback, ctl_anchor, ctl_units = st.columns([1, 1, 1])
+    with ctl_lookback:
+        lookback_key = st.selectbox(
+            "Lookback",
+            list(LOOKBACKS.keys()),
+            index=list(LOOKBACKS).index("20Y"),
+        )
+    with ctl_anchor:
+        anchor = st.radio(
+            "Anchor",
+            ["Start", "End"],
+            index=1,
+            horizontal=True,
+            help="Start: line begins at 0. End: line ends at 0.",
+        )
+    with ctl_units:
+        units = st.radio(
+            "Y-axis units",
+            ["ln", "dB", "ratio"],
+            index=1,
+            horizontal=True,
+            help="ln: natural log return. dB: 10·log10. ratio: P_t / P_ref (log y-scale).",
+        )
 
     seen: set[str] = set()
     tickers: list[str] = []
@@ -288,14 +283,32 @@ if __name__ == "__main__":
         st.error("No data available for the selected tickers and window.")
         st.stop()
 
-    st.line_chart(frame, height=520)
+    chart_df = frame.reset_index()
+    chart_df = (
+        chart_df.rename(columns={chart_df.columns[0]: "Date"})
+        .melt(id_vars="Date", var_name="Ticker", value_name="Value")
+        .dropna()
+    )
 
-    with st.expander("Latest values"):
-        last = frame.dropna(how="all").iloc[-1].sort_values(ascending=False)
-        st.dataframe(
-            last.rename("value").to_frame().style.format("{:.4f}"),
-            use_container_width=True,
+    y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
+    chart = (
+        alt.Chart(chart_df)
+        .mark_line()
+        .encode(
+            x=alt.X("Date:T", title=None),
+            y=alt.Y("Value:Q", scale=y_scale, title=units),
+            color=alt.Color("Ticker:N", legend=alt.Legend(title=None)),
         )
+        .properties(height=520)
+    )
+    st.altair_chart(chart, width="stretch")
+
+    UNIT_HELP = {
+        "ln": "-0.5 ≈ -40%<br>-0.1 ≈ -10%<br>+0.1 ≈ +10%<br>+0.5 ≈ +65%<br>+0.7 ≈ ×2<br>+1.0 ≈ ×2.7<br>+2.3 ≈ ×10",
+        "dB": "-1 dB ≈ -20%<br>+1 dB ≈ +25%<br>+3 dB ≈ ×2<br>+10 dB = ×10",
+        "ratio": "1.0 = unchanged<br>2.0 = ×2<br>0.5 = ÷2",
+    }
+    st.markdown(UNIT_HELP[units], unsafe_allow_html=True)
 
     st.caption(
         f"Data via yfinance-cache · {len(frame.columns)} series · "
