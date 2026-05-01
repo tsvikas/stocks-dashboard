@@ -119,7 +119,7 @@ QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def fetch_close(ticker: str, period: str) -> pd.Series:
+def _fetch_close(ticker: str, period: str) -> pd.Series:
     dat = yfc.Ticker(ticker)
     df = dat.history(
         period=period,
@@ -136,8 +136,10 @@ def fetch_close(ticker: str, period: str) -> pd.Series:
     return s
 
 
+# Cache key intentionally excludes anchor/units: those toggles drive the cheap
+# `_apply` step and must not invalidate the expensive concat+resample frame.
 @st.cache_data(ttl=3600, show_spinner="Fetching prices…")
-def load_prices(
+def _load_prices(
     tickers: tuple[str, ...],
     lookback_key: str,
 ) -> tuple[pd.DataFrame, dict[str, str]]:
@@ -152,7 +154,7 @@ def load_prices(
     errors: dict[str, str] = {}
     for t in tickers:
         try:
-            s = fetch_close(t, period)
+            s = _fetch_close(t, period)
         except Exception as exc:  # noqa: BLE001 — surface any fetch failure inline
             errors[t] = type(exc).__name__
             continue
@@ -175,7 +177,7 @@ def load_prices(
     return prices.dropna(how="all"), errors
 
 
-def transform(prices: pd.DataFrame, anchor: str, units: str) -> pd.DataFrame:
+def _apply(prices: pd.DataFrame, anchor: str, units: str) -> pd.DataFrame:
     if prices.empty:
         return prices
     ref = prices.bfill().iloc[0] if anchor == "Start" else prices.ffill().iloc[-1]
@@ -277,8 +279,8 @@ if not tickers:
     st.info("Pick at least one ticker from the sidebar.")
     st.stop()
 
-prices, errors = load_prices(tuple(tickers), lookback_key)
-frame = transform(prices, anchor, units)
+prices, errors = _load_prices(tuple(tickers), lookback_key)
+frame = _apply(prices, anchor, units)
 
 if errors:
     st.warning(
