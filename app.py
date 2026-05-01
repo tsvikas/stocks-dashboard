@@ -210,7 +210,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-ctl_lookback, ctl_anchor, ctl_units = st.columns([1, 1, 1])
+ctl_lookback, ctl_anchor, ctl_units, ctl_baseline = st.columns([1, 1, 1, 1])
 with ctl_lookback:
     lookback_key = st.selectbox(
         "Lookback",
@@ -233,6 +233,13 @@ with ctl_units:
         horizontal=True,
         help="ln: natural log return. dB: 10·log10. ratio: P_t / P_ref (log y-scale).",
     )
+with ctl_baseline:
+    baseline_text = st.text_input(
+        "Baseline",
+        placeholder="e.g. SPY",
+        help="If set to a ticker, all other tickers are shown relative to it.",
+    )
+baseline = baseline_text.strip().upper() if baseline_text else ""
 
 # Merge quick + custom, preserving order, dedup case-insensitively.
 seen: set[str] = set()
@@ -247,8 +254,26 @@ if not tickers:
     st.info("Pick at least one ticker from the sidebar.")
     st.stop()
 
-prices, errors = load_prices(tuple(tickers), lookback_key)
+fetch_tickers = list(tickers)
+if baseline and baseline not in fetch_tickers:
+    fetch_tickers.append(baseline)
+
+prices, errors = load_prices(tuple(fetch_tickers), lookback_key)
 frame = transform(prices, anchor, units)
+
+baseline_active = bool(baseline) and baseline in frame.columns
+if baseline_active:
+    base_series = frame[baseline]
+    if units == "ratio":
+        frame = frame.div(base_series, axis=0)
+    else:
+        frame = frame.sub(base_series, axis=0)
+    frame = frame.drop(columns=[baseline])
+elif baseline:
+    st.warning(
+        f"Baseline **{baseline}** unavailable; showing absolute view.",
+        icon="\N{WARNING SIGN}",
+    )
 
 if errors:
     st.warning(
@@ -268,12 +293,13 @@ chart_df = (
 )
 
 y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
+y_title = f"{units} vs {baseline}" if baseline_active else units
 chart = (
     alt.Chart(chart_df)
     .mark_line()
     .encode(
         x=alt.X("Date:T", title=None),
-        y=alt.Y("Value:Q", scale=y_scale, title=units),
+        y=alt.Y("Value:Q", scale=y_scale, title=y_title),
         color=alt.Color("Ticker:N", legend=alt.Legend(title=None)),
     )
     .properties(height=520)
