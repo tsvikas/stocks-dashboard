@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -202,31 +203,8 @@ def parse_custom(text: str) -> list[str]:
     return out
 
 
-# ---- Sidebar ------------------------------------------------------------- #
+# ---- Sidebar (tickers only) --------------------------------------------- #
 with st.sidebar:
-    st.markdown("### Lookback")
-    lookback_key = st.radio(
-        "Lookback",
-        list(LOOKBACKS.keys()),
-        index=3,
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-
-    st.markdown("### Quick tickers")
-    selected_quick: list[str] = []
-    for group_name, items in QUICK_TICKERS:
-        with st.expander(group_name, expanded=True):
-            for sym, label, default in items:
-                star = " \N{BLACK STAR}" if default else ""
-                checked = st.checkbox(
-                    f"{sym}{star} — {label}",
-                    value=default,
-                    key=f"chk_{sym}",
-                )
-                if checked:
-                    selected_quick.append(sym)
-
     st.markdown("### Custom tickers")
     custom_text = st.text_input(
         "Custom tickers",
@@ -235,34 +213,49 @@ with st.sidebar:
     )
     custom = parse_custom(custom_text)
 
-    st.markdown("### Anchor")
+    st.markdown("### Quick tickers")
+    selected_quick: list[str] = []
+    for group_name, items in QUICK_TICKERS:
+        with st.expander(group_name, expanded=True):
+            for sym, label, default in items:
+                checked = st.checkbox(
+                    f"{sym} — {label}",
+                    value=default,
+                    key=f"chk_{sym}",
+                )
+                if checked:
+                    selected_quick.append(sym)
+
+
+# ---- Main ---------------------------------------------------------------- #
+st.markdown(
+    "<h1 class='editorial-title'>Stock log-returns</h1><hr class='hairline'/>",
+    unsafe_allow_html=True,
+)
+
+ctl_lookback, ctl_anchor, ctl_units = st.columns([1, 1, 1])
+with ctl_lookback:
+    lookback_key = st.selectbox(
+        "Lookback",
+        list(LOOKBACKS.keys()),
+        index=3,
+    )
+with ctl_anchor:
     anchor = st.radio(
         "Anchor",
         ["Start", "End"],
         index=0,
         horizontal=True,
-        label_visibility="collapsed",
         help="Start: line begins at 0. End: line ends at 0.",
     )
-
-    st.markdown("### Y-axis units")
+with ctl_units:
     units = st.radio(
-        "Units",
-        ["ln", "dB", "factor"],
+        "Y-axis units",
+        ["ln", "dB", "ratio"],
         index=0,
         horizontal=True,
-        label_visibility="collapsed",
-        help="ln: natural log return. dB: 10·log10. factor: P_t / P_ref.",
+        help="ln: natural log return. dB: 10·log10. ratio: P_t / P_ref (log y-scale).",
     )
-
-
-# ---- Main ---------------------------------------------------------------- #
-st.markdown(
-    "<h1 class='editorial-title'>Stock log-returns</h1>"
-    f"<p class='editorial-sub'>{lookback_key} · anchor: {anchor.lower()} · units: {units}</p>"
-    "<hr class='hairline'/>",
-    unsafe_allow_html=True,
-)
 
 # Merge quick + custom, preserving order, dedup case-insensitively.
 seen: set[str] = set()
@@ -290,14 +283,30 @@ if frame.empty:
     st.error("No data available for the selected tickers and window.")
     st.stop()
 
-st.line_chart(frame, height=520)
+chart_df = frame.reset_index()
+chart_df = chart_df.rename(columns={chart_df.columns[0]: "Date"}).melt(
+    id_vars="Date", var_name="Ticker", value_name="Value"
+).dropna()
 
-with st.expander("Latest values"):
-    last = frame.dropna(how="all").iloc[-1].sort_values(ascending=False)
-    st.dataframe(
-        last.rename("value").to_frame().style.format("{:.4f}"),
-        use_container_width=True,
+y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
+chart = (
+    alt.Chart(chart_df)
+    .mark_line()
+    .encode(
+        x=alt.X("Date:T", title=None),
+        y=alt.Y("Value:Q", scale=y_scale, title=units),
+        color=alt.Color("Ticker:N", legend=alt.Legend(title=None)),
     )
+    .properties(height=520)
+)
+st.altair_chart(chart, width="stretch")
+
+UNIT_HELP = {
+    "ln": "**ln** — +0.10 ≈ +10.5% · +0.69 ≈ ×2 · +2.30 = ×10",
+    "dB": "**dB** — +1 dB ≈ +26% · +3 dB ≈ ×2 · +10 dB = ×10",
+    "ratio": "**ratio** (log y) — 1.00 = unchanged · 2.00 = ×2 · 0.50 = ÷2",
+}
+st.markdown(UNIT_HELP[units])
 
 st.caption(
     f"Data via yfinance-cache · {len(frame.columns)} series · "
