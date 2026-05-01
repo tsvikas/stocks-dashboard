@@ -58,16 +58,18 @@ st.markdown(
 # ---- Lookback periods ---------------------------------------------------- #
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
 # For unsupported ranges we fetch "max" and slice client-side.
-LOOKBACKS: dict[str, tuple[str, int | None]] = {
-    "1Y": ("1y", None),
-    "2Y": ("2y", None),
-    "3Y": ("max", 3),
-    "5Y": ("5y", None),
-    "10Y": ("10y", None),
-    "20Y": ("max", 20),
-    "30Y": ("max", 30),
-    "50Y": ("max", 50),
-    "MAX": ("max", None),
+# Resample rule keeps the chart payload at ~250-1300 points per ticker so the
+# Vega-Lite redraw on every widget toggle stays sub-second.
+LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
+    "1Y": ("1y", None, None),
+    "2Y": ("2y", None, None),
+    "3Y": ("max", 3, None),
+    "5Y": ("5y", None, None),
+    "10Y": ("10y", None, "W-FRI"),
+    "20Y": ("max", 20, "W-FRI"),
+    "30Y": ("max", 30, "ME"),
+    "50Y": ("max", 50, "ME"),
+    "MAX": ("max", None, "ME"),
 }
 
 QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
@@ -134,14 +136,12 @@ def fetch_close(ticker: str, period: str) -> pd.Series:
     return s
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def build_chart_frame(
+@st.cache_data(ttl=3600, show_spinner="Fetching prices…")
+def load_prices(
     tickers: tuple[str, ...],
     lookback_key: str,
-    anchor: str,
-    units: str,
 ) -> tuple[pd.DataFrame, dict[str, str]]:
-    period, slice_years = LOOKBACKS[lookback_key]
+    period, slice_years, resample_rule = LOOKBACKS[lookback_key]
     cutoff = (
         pd.Timestamp.utcnow().tz_localize(None) - pd.DateOffset(years=slice_years)
         if slice_years is not None
@@ -170,23 +170,23 @@ def build_chart_frame(
         return pd.DataFrame(), errors
 
     prices = pd.concat(columns, axis=1).sort_index()
+    if resample_rule is not None:
+        prices = prices.resample(resample_rule).last()
+    return prices.dropna(how="all"), errors
 
-    if anchor == "Start":
-        ref = prices.apply(lambda c: c.dropna().iloc[0])
-    else:
-        ref = prices.apply(lambda c: c.dropna().iloc[-1])
 
+def transform(prices: pd.DataFrame, anchor: str, units: str) -> pd.DataFrame:
+    if prices.empty:
+        return prices
+    ref = prices.bfill().iloc[0] if anchor == "Start" else prices.ffill().iloc[-1]
     ratio = prices.divide(ref)
-
     if units == "ln":
         out = np.log(ratio)
     elif units == "dB":
         out = 10.0 * np.log10(ratio)
-    else:  # "factor" — plot the ratio itself
+    else:
         out = ratio
-
-    out = out.dropna(how="all")
-    return out, errors
+    return out.dropna(how="all")
 
 
 def parse_custom(text: str) -> list[str]:
@@ -277,8 +277,8 @@ if not tickers:
     st.info("Pick at least one ticker from the sidebar.")
     st.stop()
 
-with st.spinner("Fetching prices…"):
-    frame, errors = build_chart_frame(tuple(tickers), lookback_key, anchor, units)
+prices, errors = load_prices(tuple(tickers), lookback_key)
+frame = transform(prices, anchor, units)
 
 if errors:
     st.warning(
