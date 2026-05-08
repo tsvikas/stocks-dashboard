@@ -122,7 +122,7 @@ def fetch_fred(series_id: str) -> pd.Series:
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_close(ticker: str, period: str) -> pd.Series:
     if ticker.startswith(FRED_PREFIX):
-        return fetch_fred(ticker[len(FRED_PREFIX):])
+        return fetch_fred(ticker[len(FRED_PREFIX) :])
     dat = yfc.Ticker(ticker)
     df = dat.history(
         period=period,
