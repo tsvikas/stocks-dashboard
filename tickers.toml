@@ -142,3 +142,19 @@ tickers = [
     { symbol = "BTC-USD", label = "Bitcoin" },
     { symbol = "ETH-USD", label = "Ethereum" },
 ]
+
+# Inflation series via FRED (https://fred.stlouisfed.org). The `FRED:` prefix
+# routes the symbol through FRED's public CSV endpoint instead of yfinance.
+# Series are monthly index levels (base year varies); the existing log/ratio
+# transform converts them to cumulative inflation against the chosen anchor.
+[[group]]
+name = "Inflation (FRED)"
+expanded = false
+tickers = [
+    { symbol = "FRED:CPIAUCSL", label = "US CPI — all items, SA (1947)" },
+    { symbol = "FRED:CPILFESL", label = "US Core CPI — ex food & energy, SA (1957)" },
+    { symbol = "FRED:CPIAUCNS", label = "US CPI — all items, NSA (1913)" },
+    { symbol = "FRED:CP0000EZ19M086NEST", label = "Euro Area HICP (1996)" },
+    { symbol = "FRED:GBRCPIALLMINMEI", label = "UK CPI (1955)" },
+    { symbol = "FRED:JPNCPIALLMINMEI", label = "Japan CPI (1955)" },
+]

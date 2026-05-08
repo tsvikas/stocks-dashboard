@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import tomllib
+import urllib.request
 from pathlib import Path
 
 import altair as alt
@@ -96,8 +98,31 @@ def load_quick_tickers(
 QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
 
 
+FRED_PREFIX = "FRED:"
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_fred(series_id: str) -> pd.Series:
+    # FRED's CDN rejects urllib's default User-Agent, so set one explicitly.
+    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
+    req = urllib.request.Request(url, headers={"User-Agent": "stocks-dashboard"})
+    name = f"{FRED_PREFIX}{series_id}"
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        df = pd.read_csv(io.BytesIO(resp.read()), na_values=["."])
+    if df.empty or df.shape[1] < 2:
+        return pd.Series(dtype=float, name=name)
+    date_col, val_col = df.columns[0], df.columns[1]
+    df[date_col] = pd.to_datetime(df[date_col])
+    s = df.set_index(date_col)[val_col].dropna().astype(float)
+    s.index.name = None
+    s.name = name
+    return s
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_close(ticker: str, period: str) -> pd.Series:
+    if ticker.startswith(FRED_PREFIX):
+        return fetch_fred(ticker[len(FRED_PREFIX):])
     dat = yfc.Ticker(ticker)
     df = dat.history(
         period=period,
@@ -120,9 +145,12 @@ def load_prices(
     lookback_key: str,
 ) -> tuple[pd.DataFrame, dict[str, str]]:
     period, slice_years, resample_rule = LOOKBACKS[lookback_key]
+    years = slice_years
+    if years is None and period.endswith("y") and period[:-1].isdigit():
+        years = int(period[:-1])
     cutoff = (
-        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
-        if slice_years is not None
+        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=years)
+        if years is not None
         else None
     )
 
