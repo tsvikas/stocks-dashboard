@@ -263,7 +263,7 @@ frame = transform(prices, anchor, units)
 
 baseline_active = bool(baseline) and baseline in frame.columns
 if baseline_active:
-    base_series = frame[baseline]
+    base_series = frame[baseline].ffill()
     if units == "ratio":
         frame = frame.div(base_series, axis=0)
     else:
