@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import tomllib
+import urllib.request
 from pathlib import Path
 
 import altair as alt
@@ -96,8 +98,39 @@ def load_quick_tickers(
 QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
 
 
+FRED_PREFIX = "FRED:"
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_fred(series_id: str) -> pd.Series:
+    # FRED's CDN times out from common cloud egress IPs; DBnomics mirrors FRED
+    # series under FRED/{id}/{id} and is reachable without an API key.
+    url = (
+        "https://api.db.nomics.world/v22/series/"
+        f"FRED/{series_id}/{series_id}?observations=1"
+    )
+    req = urllib.request.Request(url, headers={"User-Agent": "stocks-dashboard"})
+    name = f"{FRED_PREFIX}{series_id}"
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        payload = json.loads(resp.read())
+    docs = payload.get("series", {}).get("docs") or []
+    if not docs:
+        return pd.Series(dtype=float, name=name)
+    doc = docs[0]
+    periods = doc.get("period") or []
+    values = doc.get("value") or []
+    if not periods or not values:
+        return pd.Series(dtype=float, name=name)
+    s = pd.Series(values, index=pd.to_datetime(periods, errors="coerce"), name=name)
+    s = pd.to_numeric(s, errors="coerce").dropna()
+    s.index.name = None
+    return s
+
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_close(ticker: str, period: str) -> pd.Series:
+    if ticker.startswith(FRED_PREFIX):
+        return fetch_fred(ticker[len(FRED_PREFIX) :])
     dat = yfc.Ticker(ticker)
     df = dat.history(
         period=period,
@@ -120,9 +153,12 @@ def load_prices(
     lookback_key: str,
 ) -> tuple[pd.DataFrame, dict[str, str]]:
     period, slice_years, resample_rule = LOOKBACKS[lookback_key]
+    years = slice_years
+    if years is None and period.endswith("y") and period[:-1].isdigit():
+        years = int(period[:-1])
     cutoff = (
-        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
-        if slice_years is not None
+        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=years)
+        if years is not None
         else None
     )
 
