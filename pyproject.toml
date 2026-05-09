@@ -18,6 +18,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["network: requires live access to Yahoo Finance"]
 addopts = ["-ra"]
 
 [tool.codespell]

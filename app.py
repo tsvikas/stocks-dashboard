@@ -9,7 +9,8 @@ import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
-import yfinance_cache as yfc
+
+from data import fetch_close as _fetch_close
 
 TICKERS_FILE = Path(__file__).with_name("tickers.toml")
 
@@ -51,20 +52,7 @@ QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def fetch_close(ticker: str, period: str) -> pd.Series:
-    dat = yfc.Ticker(ticker)
-    df = dat.history(
-        period=period,
-        max_age="6h",
-        adjust_splits=True,
-        adjust_divs=True,
-    )
-    if df is None or df.empty or "Close" not in df.columns:
-        return pd.Series(dtype=float, name=ticker)
-    s = df["Close"].dropna()
-    if isinstance(s.index, pd.DatetimeIndex) and s.index.tz is not None:
-        s.index = s.index.tz_convert("UTC").tz_localize(None)
-    s.name = ticker
-    return s
+    return _fetch_close(ticker, period)
 
 
 @st.cache_data(ttl=3600, show_spinner="Fetching prices…")
