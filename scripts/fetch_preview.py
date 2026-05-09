@@ -8,6 +8,7 @@ Defaults: https://tsvikas-stocks-dashboard.streamlit.app/ -> docs/preview.png
 
 from __future__ import annotations
 
+import http.cookiejar
 import re
 import sys
 import urllib.request
@@ -16,7 +17,19 @@ from pathlib import Path
 
 DEFAULT_APP_URL = "https://tsvikas-stocks-dashboard.streamlit.app/"
 DEFAULT_OUT = Path("docs/preview.png")
-USER_AGENT = "Mozilla/5.0 (compatible; fetch-preview-script)"
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
+
+_opener = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())
+)
+_opener.addheaders = [
+    ("User-Agent", USER_AGENT),
+    ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+    ("Accept-Language", "en-US,en;q=0.9"),
+]
 
 
 class OgImageParser(HTMLParser):
@@ -34,8 +47,7 @@ class OgImageParser(HTMLParser):
 
 
 def _get(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=30) as resp:
+    with _opener.open(url, timeout=30) as resp:
         return resp.read()
 
 
