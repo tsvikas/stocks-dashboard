@@ -1,0 +1,61 @@
+"""End-to-end fetch test for every symbol in tickers.toml.
+
+Calls the same ``fetch_close`` the Streamlit app calls, so a regression
+in the cache wrapper or the upstream Yahoo response shows up here.
+
+Run with ``uv run pytest -v``. Requires network; auto-skips when Yahoo
+Finance is unreachable.
+"""
+
+from __future__ import annotations
+
+import tomllib
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+import pytest
+import yfinance_cache.yfc_cache_manager as yfcm
+
+from data import fetch_close
+
+TICKERS_FILE = Path(__file__).resolve().parent.parent / "tickers.toml"
+
+
+def _all_symbols() -> list[str]:
+    data = tomllib.loads(TICKERS_FILE.read_text(encoding="utf-8"))
+    return [t["symbol"] for g in data["group"] for t in g["tickers"]]
+
+
+def _yahoo_reachable() -> bool:
+    req = urllib.request.Request(
+        "https://query1.finance.yahoo.com/v8/finance/chart/AAPL?range=5d&interval=1d",
+        headers={"User-Agent": "Mozilla/5.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return resp.status == 200
+    except (urllib.error.URLError, OSError, TimeoutError):
+        return False
+
+
+@pytest.fixture(autouse=True)
+def _isolated_cache(tmp_path, monkeypatch):
+    """Point yfinance-cache at a per-test directory so the user cache is untouched."""
+    monkeypatch.setattr(yfcm, "GetCacheDirpath", lambda: str(tmp_path))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _require_network():
+    if not _yahoo_reachable():
+        pytest.skip(
+            "Yahoo Finance unreachable from this environment", allow_module_level=True
+        )
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("ticker", _all_symbols())
+def test_fetch_close(ticker: str) -> None:
+    s = fetch_close(ticker, "1mo")
+    assert not s.empty, f"{ticker}: fetch_close returned empty Series"
+    assert s.notna().any(), f"{ticker}: all-NaN"
