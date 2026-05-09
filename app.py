@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import tomllib
+from pathlib import Path
+
 import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 import yfinance_cache as yfc
+
+TICKERS_FILE = Path(__file__).with_name("tickers.toml")
+
 
 # ---- Lookback periods ---------------------------------------------------- #
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
@@ -25,52 +31,22 @@ LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
     "MAX": ("max", None, "ME"),
 }
 
-QUICK_TICKERS: list[tuple[str, list[tuple[str, str, bool]]]] = [
-    (
-        "Single names",
-        [
-            ("NVDA", "NVIDIA", False),
-            ("AAPL", "Apple", False),
-            ("MSFT", "Microsoft", False),
-            ("GOOGL", "Alphabet", False),
-            ("META", "Meta", False),
-            ("AMZN", "Amazon", False),
-            ("TSLA", "Tesla", False),
-        ],
-    ),
-    (
-        "Indices / broad",
-        [
-            ("SPY", "S&P 500", True),
-            ("QQQ", "Nasdaq 100", False),
-            ("QLD", "Nasdaq 100 ×2", False),
-            ("TQQQ", "Nasdaq 100 ×3", False),
-            ("URTH", "MSCI World", True),
-            ("ACWI", "All-Country World", True),
-            ("VTI", "US Total Market", False),
-        ],
-    ),
-    (
-        "Commodities",
-        [
-            ("GLD", "Gold", False),
-            ("SLV", "Silver", False),
-        ],
-    ),
-    (
-        "Bonds",
-        [
-            ("TLT", "20Y Treasuries", False),
-        ],
-    ),
-    (
-        "Crypto",
-        [
-            ("BTC-USD", "Bitcoin", False),
-            ("ETH-USD", "Ethereum", False),
-        ],
-    ),
-]
+
+def load_quick_tickers(
+    path: Path,
+) -> list[tuple[str, bool, list[tuple[str, str, bool]]]]:
+    data = tomllib.loads(path.read_text(encoding="utf-8"))
+    return [
+        (
+            g["name"],
+            g.get("expanded", False),
+            [(t["symbol"], t["label"], t.get("default", False)) for t in g["tickers"]],
+        )
+        for g in data["group"]
+    ]
+
+
+QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -98,7 +74,7 @@ def load_prices(
 ) -> tuple[pd.DataFrame, dict[str, str]]:
     period, slice_years, resample_rule = LOOKBACKS[lookback_key]
     cutoff = (
-        pd.Timestamp.utcnow().tz_localize(None) - pd.DateOffset(years=slice_years)
+        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
         if slice_years is not None
         else None
     )
@@ -217,8 +193,8 @@ if __name__ == "__main__":
 
         st.markdown("### Quick tickers")
         selected_quick: list[str] = []
-        for group_name, items in QUICK_TICKERS:
-            with st.expander(group_name, expanded=True):
+        for group_name, expanded, items in QUICK_TICKERS:
+            with st.expander(group_name, expanded=expanded):
                 for sym, label, default in items:
                     checked = st.checkbox(
                         f"{sym} — {label}",
@@ -234,7 +210,7 @@ if __name__ == "__main__":
         unsafe_allow_html=True,
     )
 
-    ctl_lookback, ctl_anchor, ctl_units = st.columns([1, 1, 1])
+    ctl_lookback, ctl_anchor, ctl_units, ctl_baseline = st.columns([1, 1, 1, 1])
     with ctl_lookback:
         lookback_key = st.selectbox(
             "Lookback",
@@ -257,6 +233,13 @@ if __name__ == "__main__":
             horizontal=True,
             help="ln: natural log return. dB: 10·log10. ratio: P_t / P_ref (log y-scale).",
         )
+    with ctl_baseline:
+        baseline_text = st.text_input(
+            "Baseline",
+            placeholder="e.g. SPY",
+            help="If set to a ticker, all other tickers are shown relative to it.",
+        )
+    baseline = baseline_text.strip().upper() if baseline_text else ""
 
     seen: set[str] = set()
     tickers: list[str] = []
@@ -270,8 +253,26 @@ if __name__ == "__main__":
         st.info("Pick at least one ticker from the sidebar.")
         st.stop()
 
-    prices, errors = load_prices(tuple(tickers), lookback_key)
+    fetch_tickers = list(tickers)
+    if baseline and baseline not in fetch_tickers:
+        fetch_tickers.append(baseline)
+
+    prices, errors = load_prices(tuple(fetch_tickers), lookback_key)
     frame = transform(prices, anchor, units)
+
+    baseline_active = bool(baseline) and baseline in frame.columns
+    if baseline_active:
+        base_series = frame[baseline].ffill()
+        if units == "ratio":
+            frame = frame.div(base_series, axis=0)
+        else:
+            frame = frame.sub(base_series, axis=0)
+        frame = frame.drop(columns=[baseline])
+    elif baseline:
+        st.warning(
+            f"Baseline **{baseline}** unavailable; showing absolute view.",
+            icon="\N{WARNING SIGN}",
+        )
 
     if errors:
         st.warning(
@@ -291,12 +292,13 @@ if __name__ == "__main__":
     )
 
     y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
+    y_title = f"{units} vs {baseline}" if baseline_active else units
     chart = (
         alt.Chart(chart_df)
         .mark_line()
         .encode(
             x=alt.X("Date:T", title=None),
-            y=alt.Y("Value:Q", scale=y_scale, title=units),
+            y=alt.Y("Value:Q", scale=y_scale, title=y_title),
             color=alt.Color("Ticker:N", legend=alt.Legend(title=None)),
         )
         .properties(height=520)

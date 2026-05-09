@@ -19,3 +19,6 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["-ra"]
+
+[tool.codespell]
+ignore-words-list = "hsi"

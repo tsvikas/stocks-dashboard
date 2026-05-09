@@ -1,0 +1,144 @@
+# Quick-pick ticker groups shown in the sidebar.
+# Each group has a name, an `expanded` flag (whether the sidebar expander is
+# open by default), and a list of tickers. Each ticker has a `symbol`, a
+# human-readable `label`, and an optional `default` flag (defaults to false)
+# that pre-checks the box on first load.
+
+[[group]]
+name = "Single names"
+expanded = true
+tickers = [
+    { symbol = "NVDA", label = "NVIDIA" },
+    { symbol = "AAPL", label = "Apple" },
+    { symbol = "MSFT", label = "Microsoft" },
+    { symbol = "GOOGL", label = "Alphabet" },
+    { symbol = "META", label = "Meta" },
+    { symbol = "AMZN", label = "Amazon" },
+    { symbol = "TSLA", label = "Tesla" },
+]
+
+[[group]]
+name = "US indices (long history)"
+expanded = true
+tickers = [
+    { symbol = "^GSPC", label = "S&P 500 (1927)", default = true },
+    { symbol = "^NYA", label = "NYSE Composite (1965)" },
+    { symbol = "^IXIC", label = "NASDAQ Composite (1971)" },
+    { symbol = "^RUT", label = "Russell 2000 (1987)" },
+    { symbol = "^DJI", label = "Dow Jones (1992)" },
+]
+
+[[group]]
+name = "US ETFs"
+expanded = false
+tickers = [
+    { symbol = "SPY", label = "S&P 500" },
+    { symbol = "QQQ", label = "Nasdaq 100" },
+    { symbol = "QLD", label = "Nasdaq 100 ×2" },
+    { symbol = "TQQQ", label = "Nasdaq 100 ×3" },
+    { symbol = "VTI", label = "US Total Market" },
+]
+
+[[group]]
+name = "World / global"
+expanded = true
+tickers = [
+    { symbol = "^990100-USD-STRD", label = "MSCI World index — developed" },
+    { symbol = "^892400-USD-STRD", label = "MSCI ACWI index — all-country" },
+    { symbol = "^991000-USD-STRD", label = "MSCI World ex USA index" },
+    { symbol = "AW01.FGI", label = "FTSE All-World index" },
+    { symbol = "^SPG1200", label = "S&P Global 1200 index" },
+    { symbol = "URTH", label = "MSCI World ETF — developed (2012)", default = true },
+    { symbol = "ACWI", label = "MSCI ACWI ETF — all-country (2008)", default = true },
+    { symbol = "VT", label = "Vanguard Total World ETF (2008)" },
+    { symbol = "EFA", label = "Developed ex-US ETF (2001)" },
+    { symbol = "EEM", label = "Emerging Markets ETF (2003)" },
+    { symbol = "VEU", label = "FTSE All-World ex-US ETF (2007)" },
+]
+
+[[group]]
+name = "Europe indices"
+expanded = false
+tickers = [
+    { symbol = "^STOXX50E", label = "Euro Stoxx 50" },
+    { symbol = "^STOXX", label = "STOXX Europe 600" },
+    { symbol = "^FTSE", label = "FTSE 100 — UK" },
+    { symbol = "^GDAXI", label = "DAX — Germany" },
+    { symbol = "^FCHI", label = "CAC 40 — France" },
+    { symbol = "^SSMI", label = "SMI — Switzerland" },
+    { symbol = "^AEX", label = "AEX — Netherlands" },
+    { symbol = "^IBEX", label = "IBEX 35 — Spain" },
+    { symbol = "FTSEMIB.MI", label = "FTSE MIB — Italy" },
+    { symbol = "^OMX", label = "OMX Stockholm 30 — Sweden" },
+]
+
+[[group]]
+name = "Asia indices"
+expanded = false
+tickers = [
+    { symbol = "^N225", label = "Nikkei 225 — Japan" },
+    { symbol = "^HSI", label = "Hang Seng — Hong Kong" },
+    { symbol = "000001.SS", label = "SSE Composite — Shanghai" },
+    { symbol = "399001.SZ", label = "SZSE Component — Shenzhen" },
+    { symbol = "^KS11", label = "KOSPI — South Korea" },
+    { symbol = "^TWII", label = "TAIEX — Taiwan" },
+    { symbol = "^BSESN", label = "BSE SENSEX — India" },
+    { symbol = "^NSEI", label = "NIFTY 50 — India" },
+    { symbol = "^STI", label = "Straits Times — Singapore" },
+]
+
+[[group]]
+name = "Pacific & Americas"
+expanded = false
+tickers = [
+    { symbol = "^AORD", label = "All Ordinaries — Australia" },
+    { symbol = "^AXJO", label = "S&P/ASX 200 — Australia" },
+    { symbol = "^NZ50", label = "NZX 50 — New Zealand" },
+    { symbol = "^GSPTSE", label = "S&P/TSX Composite — Canada" },
+    { symbol = "^BVSP", label = "Bovespa — Brazil" },
+    { symbol = "^MXX", label = "IPC — Mexico" },
+    { symbol = "^MERV", label = "MERVAL — Argentina" },
+]
+
+[[group]]
+name = "Middle East & Africa"
+expanded = false
+tickers = [
+    { symbol = "TA35.TA", label = "TA-35 — Israel" },
+    { symbol = "TA125.TA", label = "TA-125 — Israel" },
+    { symbol = "^TASI.SR", label = "Tadawul — Saudi Arabia" },
+    { symbol = "^JN0U.JO", label = "FTSE/JSE Top 40 — South Africa" },
+]
+
+[[group]]
+name = "Commodities"
+expanded = false
+tickers = [
+    { symbol = "^XAU", label = "PHLX Gold/Silver miners — equity (1983)" },
+    { symbol = "GC=F", label = "Gold futures (2000)" },
+    { symbol = "SI=F", label = "Silver futures (2000)" },
+    { symbol = "CL=F", label = "WTI crude futures (2000)" },
+    { symbol = "GLD", label = "Gold ETF (2004)" },
+    { symbol = "SLV", label = "Silver ETF (2006)" },
+    { symbol = "DBC", label = "Broad commodities ETF (2006)" },
+]
+
+[[group]]
+name = "Bonds"
+expanded = false
+tickers = [
+    { symbol = "TLT", label = "20Y Treasuries (2002)" },
+    { symbol = "IEF", label = "7-10Y Treasuries (2002)" },
+    { symbol = "SHY", label = "1-3Y Treasuries (2002)" },
+    { symbol = "AGG", label = "US Aggregate Bond (2003)" },
+    { symbol = "LQD", label = "Investment-grade corp (2002)" },
+    { symbol = "HYG", label = "High-yield corp (2007)" },
+]
+
+[[group]]
+name = "Crypto"
+expanded = false
+tickers = [
+    { symbol = "BTC-USD", label = "Bitcoin" },
+    { symbol = "ETH-USD", label = "Ethereum" },
+]
