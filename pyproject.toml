@@ -15,12 +15,10 @@ dev = [
     "pytest>=8",
 ]
 
-[tool.pytest.ini_options]
+[tool.pytest]
 testpaths = ["tests"]
-markers = [
-    "network: requires live access to Yahoo Finance",
-]
-addopts = "-ra"
+markers = ["network: requires live access to Yahoo Finance"]
+addopts = ["-ra"]
 
 [tool.codespell]
 ignore-words-list = "hsi"
