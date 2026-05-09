@@ -1,7 +1,10 @@
 """End-to-end fetch test for every symbol in tickers.toml.
 
-Run with `uv run pytest -m network -v`. Network is required; tests are
-skipped automatically when Yahoo Finance is unreachable.
+Calls the same ``fetch_close`` the Streamlit app calls, so a regression
+in the cache wrapper or the upstream Yahoo response shows up here.
+
+Run with ``uv run pytest -v``. Requires network; auto-skips when Yahoo
+Finance is unreachable.
 """
 
 from __future__ import annotations
@@ -12,9 +15,9 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-import yfinance as yf
-import yfinance_cache as yfc
 import yfinance_cache.yfc_cache_manager as yfcm
+
+from data import fetch_close
 
 TICKERS_FILE = Path(__file__).resolve().parent.parent / "tickers.toml"
 
@@ -52,22 +55,7 @@ def _require_network():
 
 @pytest.mark.network
 @pytest.mark.parametrize("ticker", _all_symbols())
-def test_yfc_history(ticker: str) -> None:
-    """yfinance-cache (used by app.py) must return non-empty Close prices."""
-    df = yfc.Ticker(ticker).history(
-        period="1mo", max_age="6h", adjust_splits=True, adjust_divs=True
-    )
-    assert df is not None, f"{ticker}: history() returned None"
-    assert not df.empty, f"{ticker}: empty frame"
-    assert "Close" in df.columns, f"{ticker}: no Close column ({list(df.columns)})"
-    assert df["Close"].notna().any(), f"{ticker}: Close all-NaN"
-
-
-@pytest.mark.network
-@pytest.mark.parametrize("ticker", _all_symbols())
-def test_plain_yfinance_history(ticker: str) -> None:
-    """Sanity check against plain yfinance to distinguish yfc bugs from missing data."""
-    df = yf.Ticker(ticker).history(period="1mo", auto_adjust=True)
-    assert df is not None and not df.empty, f"{ticker}: yfinance returned no data"
-    assert "Close" in df.columns
-    assert df["Close"].notna().any(), f"{ticker}: Close all-NaN"
+def test_fetch_close(ticker: str) -> None:
+    s = fetch_close(ticker, "1mo")
+    assert not s.empty, f"{ticker}: fetch_close returned empty Series"
+    assert s.notna().any(), f"{ticker}: all-NaN"
