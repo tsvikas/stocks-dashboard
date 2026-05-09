@@ -2,6 +2,8 @@
 
 A Streamlit app for comparing log-returns across stocks, indices, commodities, bonds, and crypto. Powered by [`yfinance-cache`](https://pypi.org/project/yfinance-cache/), so daily-bar fetches hit the network at most once every 6 hours.
 
+**Live app:** <https://tsvikas-stocks-dashboard.streamlit.app/>
+
 ## Run locally
 
 ```bash
