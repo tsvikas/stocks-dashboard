@@ -15,7 +15,7 @@ dev = [
     "pytest>=8",
 ]
 
-[tool.pytest.ini_options]
+[tool.pytest]
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = ["network: requires live access to Yahoo Finance"]
