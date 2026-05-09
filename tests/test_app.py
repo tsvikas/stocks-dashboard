@@ -23,13 +23,17 @@ def test_parse_custom_dedup_case_and_separators() -> None:
 
 
 def test_transform_start_anchor_first_row_is_zero() -> None:
-    frame = transform(_prices({"A": [10.0, 11.0, 12.0], "B": [50.0, 55.0, 60.0]}), "Start", "ln")
+    frame = transform(
+        _prices({"A": [10.0, 11.0, 12.0], "B": [50.0, 55.0, 60.0]}), "Start", "ln"
+    )
     # ln(P_t / P_0) → first row is exactly 0 for every column.
     assert frame.iloc[0].abs().max() == 0.0
 
 
 def test_transform_end_anchor_last_row_is_zero() -> None:
-    frame = transform(_prices({"A": [10.0, 11.0, 12.0], "B": [50.0, 55.0, 60.0]}), "End", "ln")
+    frame = transform(
+        _prices({"A": [10.0, 11.0, 12.0], "B": [50.0, 55.0, 60.0]}), "End", "ln"
+    )
     assert frame.iloc[-1].abs().max() == 0.0
 
 
