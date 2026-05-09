@@ -10,5 +10,17 @@ dependencies = [
     "numpy>=1.26",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "network: requires live access to Yahoo Finance",
+]
+addopts = "-ra"
+
 [tool.codespell]
 ignore-words-list = "hsi"
