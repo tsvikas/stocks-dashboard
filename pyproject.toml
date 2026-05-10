@@ -4,10 +4,12 @@ version = "0.1.0"
 description = "Streamlit dashboard for stock log-returns"
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "streamlit>=1.40",
-    "yfinance-cache>=0.6",
-    "pandas>=2.2",
+    "altair>=5",
     "numpy>=1.26",
+    "pandas>=2.2",
+    "streamlit>=1.40",
+    "yfinance>=0.2",
+    "yfinance-cache>=0.6",
 ]
 
 [dependency-groups]
@@ -17,7 +19,6 @@ dev = [
 
 [tool.pytest]
 testpaths = ["tests"]
-pythonpath = ["."]
 markers = ["network: requires live access to Yahoo Finance"]
 addopts = ["-ra"]
 
