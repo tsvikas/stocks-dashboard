@@ -1,4 +1,4 @@
-"""Unit tests for pure helpers in app.py."""
+"""Unit tests for the pure helpers in data.py."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from app import parse_custom, transform
+from data import parse_custom, transform
 
 
 def _prices(data: dict[str, list[float]]) -> pd.DataFrame:
