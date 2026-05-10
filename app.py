@@ -2,17 +2,32 @@
 
 from __future__ import annotations
 
-import tomllib
-from pathlib import Path
-
 import altair as alt
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-from data import fetch_close as _fetch_close
+from data import (
+    LOOKBACKS,
+    QUICK_TICKERS,
+    fetch_close,
+    load_prices,
+    parse_custom,
+    transform,
+)
 
-TICKERS_FILE = Path(__file__).with_name("tickers.toml")
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def cached_fetch_close(ticker: str, period: str) -> pd.Series:
+    return fetch_close(ticker, period)
+
+
+@st.cache_data(ttl=3600, show_spinner="Fetching prices…")
+def cached_load_prices(
+    tickers: tuple[str, ...],
+    lookback_key: str,
+) -> tuple[pd.DataFrame, dict[str, str]]:
+    return load_prices(tickers, lookback_key, fetch_fn=cached_fetch_close)
+
 
 st.set_page_config(
     page_title="Stock Log-Returns",
@@ -61,113 +76,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ---- Lookback periods ---------------------------------------------------- #
-# yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
-# For unsupported ranges we fetch "max" and slice client-side.
-# Resample rule keeps the chart payload at ~250-1300 points per ticker so the
-# Vega-Lite redraw on every widget toggle stays sub-second.
-LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
-    "1Y": ("1y", None, None),
-    "2Y": ("2y", None, None),
-    "3Y": ("max", 3, None),
-    "5Y": ("5y", None, None),
-    "10Y": ("10y", None, "W-FRI"),
-    "20Y": ("max", 20, "W-FRI"),
-    "30Y": ("max", 30, "ME"),
-    "50Y": ("max", 50, "ME"),
-    "MAX": ("max", None, "ME"),
-}
-
-
-def load_quick_tickers(
-    path: Path,
-) -> list[tuple[str, bool, list[tuple[str, str, bool]]]]:
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
-    return [
-        (
-            g["name"],
-            g.get("expanded", False),
-            [(t["symbol"], t["label"], t.get("default", False)) for t in g["tickers"]],
-        )
-        for g in data["group"]
-    ]
-
-
-QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
-
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_close(ticker: str, period: str) -> pd.Series:
-    return _fetch_close(ticker, period)
-
-
-@st.cache_data(ttl=3600, show_spinner="Fetching prices…")
-def load_prices(
-    tickers: tuple[str, ...],
-    lookback_key: str,
-) -> tuple[pd.DataFrame, dict[str, str]]:
-    period, slice_years, resample_rule = LOOKBACKS[lookback_key]
-    cutoff = (
-        pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
-        if slice_years is not None
-        else None
-    )
-
-    columns: list[pd.Series] = []
-    errors: dict[str, str] = {}
-    for t in tickers:
-        try:
-            s = fetch_close(t, period)
-        except Exception as exc:  # noqa: BLE001 — surface any fetch failure inline
-            errors[t] = type(exc).__name__
-            continue
-        if s.empty:
-            errors[t] = "no data"
-            continue
-        if cutoff is not None:
-            s = s[s.index >= cutoff]
-            if s.empty:
-                errors[t] = "no data in window"
-                continue
-        columns.append(s)
-
-    if not columns:
-        return pd.DataFrame(), errors
-
-    prices = pd.concat(columns, axis=1).sort_index()
-    if resample_rule is not None:
-        prices = prices.resample(resample_rule).last()
-    return prices.dropna(how="all"), errors
-
-
-def transform(prices: pd.DataFrame, anchor: str, units: str) -> pd.DataFrame:
-    if prices.empty:
-        return prices
-    ref = prices.bfill().iloc[0] if anchor == "Start" else prices.ffill().iloc[-1]
-    ratio = prices.divide(ref)
-    if units == "ln":
-        out = np.log(ratio)
-    elif units == "dB":
-        out = 10.0 * np.log10(ratio)
-    else:
-        out = ratio
-    return out.dropna(how="all")
-
-
-def parse_custom(text: str) -> list[str]:
-    if not text:
-        return []
-    seen: set[str] = set()
-    out: list[str] = []
-    for raw in text.replace(";", ",").split(","):
-        t = raw.strip().upper()
-        if t and t not in seen:
-            seen.add(t)
-            out.append(t)
-    return out
-
-
 # ---- Sidebar (tickers only) --------------------------------------------- #
 with st.sidebar:
     st.markdown("### Custom tickers")
@@ -190,7 +98,6 @@ with st.sidebar:
                 )
                 if checked:
                     selected_quick.append(sym)
-
 
 # ---- Main ---------------------------------------------------------------- #
 st.markdown(
@@ -229,7 +136,6 @@ with ctl_baseline:
     )
 baseline = baseline_text.strip().upper() if baseline_text else ""
 
-# Merge quick + custom, preserving order, dedup case-insensitively.
 seen: set[str] = set()
 tickers: list[str] = []
 for t in [*selected_quick, *custom]:
@@ -246,7 +152,7 @@ fetch_tickers = list(tickers)
 if baseline and baseline not in fetch_tickers:
     fetch_tickers.append(baseline)
 
-prices, errors = load_prices(tuple(fetch_tickers), lookback_key)
+prices, errors = cached_load_prices(tuple(fetch_tickers), lookback_key)
 frame = transform(prices, anchor, units)
 
 baseline_active = bool(baseline) and baseline in frame.columns
