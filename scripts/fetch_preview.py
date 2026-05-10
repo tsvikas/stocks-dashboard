@@ -2,6 +2,7 @@
 
 Usage:
     uv run python scripts/fetch_preview.py [APP_URL] [OUT_PATH]
+    uv run python scripts/fetch_preview.py --debug [APP_URL]
 
 Defaults: https://tsvikas-stocks-dashboard.streamlit.app/ -> docs/preview.png
 """
@@ -30,6 +31,34 @@ _opener.addheaders = [
     ("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
     ("Accept-Language", "en-US,en;q=0.9"),
 ]
+
+
+class HeadDumpParser(HTMLParser):
+    """Collects <title>, every <meta>, and every <link> tag."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.title: str = ""
+        self._in_title = False
+        self.metas: list[dict[str, str]] = []
+        self.links: list[dict[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        d = {k: (v or "") for k, v in attrs}
+        if tag == "meta":
+            self.metas.append(d)
+        elif tag == "link":
+            self.links.append(d)
+        elif tag == "title":
+            self._in_title = True
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "title":
+            self._in_title = False
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title:
+            self.title += data
 
 
 class OgImageParser(HTMLParser):
@@ -67,9 +96,31 @@ def find_og_image(app_url: str) -> str:
     raise SystemExit("No og:image / twitter:image meta tag found.")
 
 
+def debug_dump(app_url: str) -> None:
+    html = _get(app_url).decode("utf-8", errors="replace")
+    print(f"# fetched {len(html):,} chars from {app_url}\n")
+    parser = HeadDumpParser()
+    parser.feed(html)
+    print(f"<title>: {parser.title.strip()!r}\n")
+    print(f"## <meta> tags ({len(parser.metas)}):")
+    for m in parser.metas:
+        print(f"  {m}")
+    print(f"\n## <link> tags ({len(parser.links)}):")
+    for ln in parser.links:
+        print(f"  {ln}")
+    print("\n## image-ish strings in body:")
+    for m in re.finditer(r'https?://[^\s"\'<>]+\.(?:png|jpe?g|webp|gif|svg)', html, re.I):
+        print(f"  {m.group(0)}")
+
+
 def main(argv: list[str]) -> int:
-    app_url = argv[1] if len(argv) > 1 else DEFAULT_APP_URL
-    out = Path(argv[2]) if len(argv) > 2 else DEFAULT_OUT
+    args = argv[1:]
+    if args and args[0] == "--debug":
+        debug_dump(args[1] if len(args) > 1 else DEFAULT_APP_URL)
+        return 0
+
+    app_url = args[0] if args else DEFAULT_APP_URL
+    out = Path(args[1]) if len(args) > 1 else DEFAULT_OUT
 
     img_url = find_og_image(app_url)
     print(f"og:image -> {img_url}")
@@ -82,3 +133,4 @@ def main(argv: list[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv))
+
