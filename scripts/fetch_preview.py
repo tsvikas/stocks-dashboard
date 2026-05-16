@@ -112,6 +112,31 @@ def debug_dump(app_url: str) -> None:
     for m in re.finditer(r'https?://[^\s"\'<>]+\.(?:png|jpe?g|webp|gif|svg)', html, re.I):
         print(f"  {m.group(0)}")
 
+    bundle_paths = sorted(
+        {ln["href"] for ln in parser.links if ln.get("href", "").endswith(".js")}
+    )
+    print(f"\n## scanning {len(bundle_paths)} JS bundles for preview/screenshot strings")
+    keywords = ("preview", "screenshot", "thumbnail", "snapshot", "ogImage", "og_image")
+    pattern = re.compile(
+        r'(?:"|\')([^"\']{0,200}(?:'
+        + "|".join(keywords)
+        + r')[^"\']{0,200})(?:"|\')',
+        re.IGNORECASE,
+    )
+    base = re.match(r"https?://[^/]+", app_url).group(0)
+    for path in bundle_paths:
+        full = path if path.startswith("http") else base + path
+        try:
+            body = _get(full).decode("utf-8", errors="replace")
+        except Exception as exc:
+            print(f"  [skip] {path}: {exc}")
+            continue
+        hits = {m.group(1) for m in pattern.finditer(body)}
+        if hits:
+            print(f"\n  >>> {path}")
+            for h in sorted(hits):
+                print(f"      {h}")
+
 
 def main(argv: list[str]) -> int:
     args = argv[1:]
