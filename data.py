@@ -60,6 +60,7 @@ def assign_colors(
             result[t] = palette[len(result) % len(palette)]
     return result
 
+
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
 # For unsupported ranges we fetch "max" and slice client-side.
 # Resample rule keeps the chart payload at ~250-1300 points per ticker so the
