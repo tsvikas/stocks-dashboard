@@ -8,7 +8,7 @@ fetch helpers with ``st.cache_data`` for runtime memoization.
 from __future__ import annotations
 
 import tomllib
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +17,48 @@ import yfinance as yf
 import yfinance_cache as yfc
 
 TICKERS_FILE = Path(__file__).with_name("tickers.toml")
+
+# Glasbey-style categorical palette: maximally distinguishable hues so each
+# ticker line stays visually distinct. The first ten entries match Vega's
+# default `category10`, so a fresh session looks unchanged.
+TICKER_PALETTE: tuple[str, ...] = (
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#bcbd22", "#17becf", "#7f7f7f",
+    "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5",
+    "#c49c94", "#f7b6d2", "#dbdb8d", "#9edae5", "#c7c7c7",
+    "#393b79", "#637939", "#8c6d31", "#843c39", "#7b4173",
+    "#5254a3", "#8ca252", "#bd9e39", "#ad494a", "#a55194",
+    "#6b6ecf", "#b5cf6b", "#e7ba52", "#d6616b", "#ce6dbd",
+    "#9c9ede", "#cedb9c", "#e7cb94", "#e7969c", "#de9ed6",
+)  # fmt: skip
+
+
+def assign_colors(
+    tickers: Iterable[str],
+    existing: dict[str, str],
+    palette: Sequence[str] = TICKER_PALETTE,
+) -> dict[str, str]:
+    """Return a stable ticker→color mapping.
+
+    Tickers already in ``existing`` keep their color; tickers no longer in
+    the active set are dropped (freeing their palette slot); new tickers
+    take the first palette color not currently in use. Cycles by position
+    only after the entire palette is consumed.
+    """
+    active = list(tickers)
+    keep = set(active)
+    result = {t: c for t, c in existing.items() if t in keep}
+    for t in active:
+        if t in result:
+            continue
+        used = set(result.values())
+        for c in palette:
+            if c not in used:
+                result[t] = c
+                break
+        else:
+            result[t] = palette[len(result) % len(palette)]
+    return result
 
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
 # For unsupported ranges we fetch "max" and slice client-side.
