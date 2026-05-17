@@ -5,6 +5,7 @@ description = "Streamlit dashboard for stock log-returns"
 requires-python = ">=3.11,<3.14"
 dependencies = [
     "altair>=5",
+    "colorcet>=3",
     "numpy>=1.26",
     "pandas>=2.2",
     "streamlit>=1.40",
