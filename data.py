@@ -11,6 +11,7 @@ import tomllib
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
 
+import colorcet as cc
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -18,19 +19,10 @@ import yfinance_cache as yfc
 
 TICKERS_FILE = Path(__file__).with_name("tickers.toml")
 
-# Glasbey-style categorical palette: maximally distinguishable hues so each
-# ticker line stays visually distinct. The first ten entries match Vega's
-# default `category10`, so a fresh session looks unchanged.
-TICKER_PALETTE: tuple[str, ...] = (
-    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
-    "#8c564b", "#e377c2", "#bcbd22", "#17becf", "#7f7f7f",
-    "#aec7e8", "#ffbb78", "#98df8a", "#ff9896", "#c5b0d5",
-    "#c49c94", "#f7b6d2", "#dbdb8d", "#9edae5", "#c7c7c7",
-    "#393b79", "#637939", "#8c6d31", "#843c39", "#7b4173",
-    "#5254a3", "#8ca252", "#bd9e39", "#ad494a", "#a55194",
-    "#6b6ecf", "#b5cf6b", "#e7ba52", "#d6616b", "#ce6dbd",
-    "#9c9ede", "#cedb9c", "#e7cb94", "#e7969c", "#de9ed6",
-)  # fmt: skip
+# Glasbey palette tuned for light backgrounds (excludes near-white hues):
+# 256 maximally distinguishable colors, so each selected ticker keeps a
+# visually distinct line on the cream-colored dashboard.
+TICKER_PALETTE: tuple[str, ...] = tuple(cc.glasbey_light)
 
 
 def assign_colors(
