@@ -9,6 +9,7 @@ import streamlit as st
 from data import (
     LOOKBACKS,
     QUICK_TICKERS,
+    assign_colors,
     fetch_close,
     load_prices,
     parse_custom,
@@ -145,8 +146,13 @@ for t in [*selected_quick, *custom]:
         tickers.append(key)
 
 if not tickers:
+    st.session_state["ticker_colors"] = {}
     st.info("Pick at least one ticker from the sidebar.")
     st.stop()
+
+st.session_state["ticker_colors"] = assign_colors(
+    tickers, st.session_state.get("ticker_colors", {})
+)
 
 fetch_tickers = list(tickers)
 if baseline and baseline not in fetch_tickers:
@@ -188,13 +194,19 @@ chart_df = (
 
 y_scale = alt.Scale(type="log") if units == "ratio" else alt.Scale(type="linear")
 y_title = f"{units} vs {baseline}" if baseline_active else units
+color_domain = [t for t in tickers if t in frame.columns]
+color_range = [st.session_state["ticker_colors"][t] for t in color_domain]
 chart = (
     alt.Chart(chart_df)
     .mark_line()
     .encode(
         x=alt.X("Date:T", title=None),
         y=alt.Y("Value:Q", scale=y_scale, title=y_title),
-        color=alt.Color("Ticker:N", legend=alt.Legend(title=None)),
+        color=alt.Color(
+            "Ticker:N",
+            legend=alt.Legend(title=None),
+            scale=alt.Scale(domain=color_domain, range=color_range),
+        ),
     )
     .properties(height=520)
 )

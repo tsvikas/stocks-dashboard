@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from data import parse_custom, transform
+from data import TICKER_PALETTE, assign_colors, parse_custom, transform
 
 
 def _prices(data: dict[str, list[float]]) -> pd.DataFrame:
@@ -48,6 +48,37 @@ def test_transform_db_is_ln_scaled_by_10_over_ln10() -> None:
 def test_transform_ratio_units_returns_price_over_ref() -> None:
     frame = transform(_prices({"A": [10.0, 12.0, 15.0]}), "Start", "ratio")
     np.testing.assert_allclose(frame["A"].to_numpy(), [1.0, 1.2, 1.5])
+
+
+def test_assign_colors_first_ticker_gets_first_palette_color() -> None:
+    colors = assign_colors(["AAPL"], {})
+    assert colors == {"AAPL": TICKER_PALETTE[0]}
+
+
+def test_assign_colors_kept_tickers_keep_color_when_one_is_removed() -> None:
+    # Bug being fixed: removing a ticker must not recolor the survivors.
+    initial = assign_colors(["AAPL", "MSFT", "NVDA"], {})
+    after_remove = assign_colors(["AAPL", "NVDA"], initial)
+    assert after_remove["AAPL"] == initial["AAPL"]
+    assert after_remove["NVDA"] == initial["NVDA"]
+    assert "MSFT" not in after_remove
+
+
+def test_assign_colors_readded_ticker_reuses_freed_slot() -> None:
+    initial = assign_colors(["AAPL", "MSFT"], {})
+    after_remove = assign_colors(["AAPL"], initial)
+    after_readd = assign_colors(["AAPL", "GOOGL"], after_remove)
+    # MSFT's freed slot (palette[1]) is the first unused color, so GOOGL gets it.
+    assert after_readd["AAPL"] == initial["AAPL"]
+    assert after_readd["GOOGL"] == TICKER_PALETTE[1]
+
+
+def test_assign_colors_cycles_when_palette_exhausted() -> None:
+    palette = ("#aaa", "#bbb")
+    colors = assign_colors(["A", "B", "C"], {}, palette)
+    assert colors["A"] == "#aaa"
+    assert colors["B"] == "#bbb"
+    assert colors["C"] == "#aaa"
 
 
 def test_transform_missing_column_does_not_break_others() -> None:
