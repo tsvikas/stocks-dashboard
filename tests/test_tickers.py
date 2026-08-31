@@ -53,9 +53,20 @@ def _require_network():
         )
 
 
+# When Yahoo withdraws a symbol's history it keeps answering with a single
+# live quote, which is neither empty nor all-NaN — so a non-empty check alone
+# lets a dead symbol through. Healthy symbols return ~20 trading days over a
+# 1mo window and withdrawn ones return exactly 1, leaving room for a threshold
+# well clear of both.
+MIN_POINTS = 5
+
+
 @pytest.mark.network
 @pytest.mark.parametrize("ticker", _all_symbols())
 def test_fetch_close(ticker: str) -> None:
     s = fetch_close(ticker, "1mo")
-    assert not s.empty, f"{ticker}: fetch_close returned empty Series"
+    assert len(s) >= MIN_POINTS, (
+        f"{ticker}: {len(s)} point(s) over 1mo, expected ~20; "
+        "Yahoo has likely withdrawn history for this symbol"
+    )
     assert s.notna().any(), f"{ticker}: all-NaN"
