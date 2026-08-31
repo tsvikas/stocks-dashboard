@@ -1,0 +1,14 @@
+---
+version: 2
+
+updates:
+  # setup-uv is referenced by exact release tag because upstream publishes no
+  # major-only ref above v7, so nothing bumps it without this.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
