@@ -36,11 +36,17 @@ st.set_page_config(
     layout="wide",
 )
 
+# The Google Fonts href is one unbroken query string; the adjacent literals
+# below are concatenated at compile time purely to stay inside the line limit.
 st.markdown(
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link href="https://fonts.googleapis.com/css2'
+    "?family=Fraunces:ital,wght@1,400;1,600"
+    "&family=JetBrains+Mono:wght@400;500"
+    "&display=swap"
+    '" rel="stylesheet">'
     """
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@1,400;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
       html, body, [data-testid="stAppViewContainer"] {
         background-color: #f7f3ec;
@@ -213,7 +219,10 @@ chart = (
 st.altair_chart(chart, width="stretch")
 
 UNIT_HELP = {
-    "ln": "-0.5 ≈ -40%<br>-0.1 ≈ -10%<br>+0.1 ≈ +10%<br>+0.5 ≈ +65%<br>+0.7 ≈ ×2<br>+1.0 ≈ ×2.7<br>+2.3 ≈ ×10",
+    "ln": (
+        "-0.5 ≈ -40%<br>-0.1 ≈ -10%<br>+0.1 ≈ +10%<br>+0.5 ≈ +65%<br>"
+        "+0.7 ≈ ×2<br>+1.0 ≈ ×2.7<br>+2.3 ≈ ×10"
+    ),
     "dB": "-1 dB ≈ -20%<br>+1 dB ≈ +25%<br>+3 dB ≈ ×2<br>+10 dB = ×10",
     "ratio": "1.0 = unchanged<br>2.0 = ×2<br>0.5 = ÷2",
 }
