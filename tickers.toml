@@ -47,7 +47,6 @@ tickers = [
     { symbol = "^892400-USD-STRD", label = "MSCI ACWI index — all-country" },
     { symbol = "^991000-USD-STRD", label = "MSCI World ex USA index" },
     { symbol = "AW01.FGI", label = "FTSE All-World index" },
-    { symbol = "^SPG1200", label = "S&P Global 1200 index" },
     { symbol = "URTH", label = "MSCI World ETF — developed (2012)", default = true },
     { symbol = "ACWI", label = "MSCI ACWI ETF — all-country (2008)", default = true },
     { symbol = "VT", label = "Vanguard Total World ETF (2008)" },
