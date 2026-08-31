@@ -103,7 +103,7 @@ expanded = false
 tickers = [
     { symbol = "TA35.TA", label = "TA-35 — Israel" },
     { symbol = "^TA125.TA", label = "TA-125 — Israel" },
-    { symbol = "^TASI.SR", label = "Tadawul — Saudi Arabia" },
+    { symbol = "KSA", label = "Saudi Arabia ETF (2015)" },
     { symbol = "^JN0U.JO", label = "FTSE/JSE Top 40 — South Africa" },
 ]
 
