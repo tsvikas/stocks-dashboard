@@ -95,7 +95,7 @@ tickers = [
     { symbol = "^GSPTSE", label = "S&P/TSX Composite — Canada" },
     { symbol = "^BVSP", label = "Bovespa — Brazil" },
     { symbol = "^MXX", label = "IPC — Mexico" },
-    { symbol = "^MERV", label = "MERVAL — Argentina" },
+    { symbol = "ARGT", label = "Argentina ETF (2011)" },
 ]
 
 [[group]]
