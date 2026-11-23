@@ -18,8 +18,8 @@ from data import (
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def cached_fetch_close(ticker: str, period: str) -> pd.Series:
-    return fetch_close(ticker, period)
+def cached_fetch_close(ticker: str, period: str, interval: str) -> pd.Series:
+    return fetch_close(ticker, period, interval)
 
 
 @st.cache_data(ttl=3600, show_spinner="Fetching prices…")
