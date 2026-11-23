@@ -26,7 +26,8 @@ That's it. `uv` resolves and installs everything from `pyproject.toml` / `uv.loc
 - **Quick tickers** — grouped checkboxes. Defaults: NVDA, SPY, URTH, GLD.
 - **Custom tickers** — comma-separated, appended to whatever's checked.
 - **Anchor** — `Start` (`y = ln(P_t / P_0)`) or `End` (`y = ln(P_t / P_T)`).
-- **Y-axis units** — `ln`, `dB` (= `10·log10`), or `factor` (= `P_t / P_ref`).
+- **Y-axis units** — `ln`, `dB` (= `10·log10`), or `ratio` (= `P_t / P_ref`, plotted on a log scale).
+- **Baseline** — optional ticker (e.g. `SPY`); every other series is shown relative to it (subtracted in `ln`/`dB`, divided in `ratio`), and the baseline itself is hidden.
 
 ## Cache layout
 
