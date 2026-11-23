@@ -15,6 +15,7 @@ tickers = [
     { symbol = "META", label = "Meta" },
     { symbol = "AMZN", label = "Amazon" },
     { symbol = "TSLA", label = "Tesla" },
+    { symbol = "ANT", label = "Anthropic" },
 ]
 
 [[group]]
