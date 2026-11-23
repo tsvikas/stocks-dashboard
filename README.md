@@ -4,6 +4,8 @@ A Streamlit app for comparing log-returns across stocks, indices, commodities, b
 
 **Live app:** <https://tsvikas-stocks-dashboard.streamlit.app/>
 
+![Screenshot of the dashboard](docs/screenshot.png)
+
 ## Run locally
 
 ```bash
