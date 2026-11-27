@@ -7,7 +7,13 @@ import math
 import numpy as np
 import pandas as pd
 
-from data import TICKER_PALETTE, assign_colors, parse_custom, transform
+from data import (
+    TICKER_PALETTE,
+    assign_colors,
+    load_prices,
+    parse_custom,
+    transform,
+)
 
 
 def _prices(data: dict[str, list[float]]) -> pd.DataFrame:
@@ -91,3 +97,21 @@ def test_transform_missing_column_does_not_break_others() -> None:
         frame["A"].to_numpy(),
         np.log(np.array([10.0, 11.0, 12.0]) / 10.0),
     )
+
+
+def test_load_prices_passes_lookback_interval_to_fetch() -> None:
+    calls: list[tuple[str, str, str]] = []
+
+    def fake_fetch(ticker: str, period: str, interval: str) -> pd.Series:
+        calls.append((ticker, period, interval))
+        idx = pd.date_range("2024-01-01", periods=3, freq="h")
+        return pd.Series([1.0, 2.0, 3.0], index=idx, name=ticker)
+
+    prices, errors = load_prices(("AAPL",), "1M", fetch_fn=fake_fetch)
+    assert calls == [("AAPL", "1mo", "1h")]
+    assert errors == {}
+    assert len(prices) == 3
+
+    calls.clear()
+    load_prices(("AAPL",), "1Y", fetch_fn=fake_fetch)
+    assert calls == [("AAPL", "1y", "1d")]

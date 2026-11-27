@@ -53,20 +53,23 @@ def assign_colors(
     return result
 
 
+# Each entry is (period, slice_years, resample_rule, interval).
 # yfinance native periods: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max.
 # For unsupported ranges we fetch "max" and slice client-side.
-# Resample rule keeps the chart payload at ~250-1300 points per ticker so the
-# Vega-Lite redraw on every widget toggle stays sub-second.
-LOOKBACKS: dict[str, tuple[str, int | None, str | None]] = {
-    "1Y": ("1y", None, None),
-    "2Y": ("2y", None, None),
-    "3Y": ("max", 3, None),
-    "5Y": ("5y", None, None),
-    "10Y": ("10y", None, "W-FRI"),
-    "20Y": ("max", 20, "W-FRI"),
-    "30Y": ("max", 30, "ME"),
-    "50Y": ("max", 50, "ME"),
-    "MAX": ("max", None, "ME"),
+# Resample rule keeps the chart payload at ~140-1300 points per ticker so the
+# Vega-Lite redraw on every widget toggle stays sub-second. Short windows use
+# intraday bars instead (Yahoo serves 1h bars for the last ~730 days).
+LOOKBACKS: dict[str, tuple[str, int | None, str | None, str]] = {
+    "1M": ("1mo", None, None, "1h"),
+    "1Y": ("1y", None, None, "1d"),
+    "2Y": ("2y", None, None, "1d"),
+    "3Y": ("max", 3, None, "1d"),
+    "5Y": ("5y", None, None, "1d"),
+    "10Y": ("10y", None, "W-FRI", "1d"),
+    "20Y": ("max", 20, "W-FRI", "1d"),
+    "30Y": ("max", 30, "ME", "1d"),
+    "50Y": ("max", 50, "ME", "1d"),
+    "MAX": ("max", None, "ME", "1d"),
 }
 
 
@@ -87,11 +90,14 @@ def load_quick_tickers(
 QUICK_TICKERS = load_quick_tickers(TICKERS_FILE)
 
 
-def fetch_close(ticker: str, period: str) -> pd.Series:
+def fetch_close(ticker: str, period: str, interval: str = "1d") -> pd.Series:
     try:
         df = yfc.Ticker(ticker).history(
             period=period,
-            max_age="6h",
+            interval=interval,
+            # Daily bars can lag a few hours; intraday bars use yfc's default
+            # (half the interval) so the latest hour shows up promptly.
+            max_age="6h" if interval == "1d" else None,
             adjust_splits=True,
             adjust_divs=True,
         )
@@ -100,7 +106,9 @@ def fetch_close(ticker: str, period: str) -> pd.Series:
         # firstTradeDate) that crypto and several non-US indices don't expose,
         # so it raises an assortment of TypeError/AttributeError/ValueError/
         # Exception. Plain yfinance has no such requirement.
-        df = yf.Ticker(ticker).history(period=period, auto_adjust=True)
+        df = yf.Ticker(ticker).history(
+            period=period, interval=interval, auto_adjust=True
+        )
     if df is None or df.empty or "Close" not in df.columns:
         return pd.Series(dtype=float, name=ticker)
     s = df["Close"].dropna()
@@ -113,9 +121,9 @@ def fetch_close(ticker: str, period: str) -> pd.Series:
 def load_prices(
     tickers: tuple[str, ...],
     lookback_key: str,
-    fetch_fn: Callable[[str, str], pd.Series] = fetch_close,
+    fetch_fn: Callable[[str, str, str], pd.Series] = fetch_close,
 ) -> tuple[pd.DataFrame, dict[str, str]]:
-    period, slice_years, resample_rule = LOOKBACKS[lookback_key]
+    period, slice_years, resample_rule, interval = LOOKBACKS[lookback_key]
     cutoff = (
         pd.Timestamp.now("UTC").tz_localize(None) - pd.DateOffset(years=slice_years)
         if slice_years is not None
@@ -126,7 +134,7 @@ def load_prices(
     errors: dict[str, str] = {}
     for t in tickers:
         try:
-            s = fetch_fn(t, period)
+            s = fetch_fn(t, period, interval)
         except Exception as exc:  # noqa: BLE001 — surface any fetch failure inline
             errors[t] = type(exc).__name__
             continue

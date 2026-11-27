@@ -22,7 +22,7 @@ That's it. `uv` resolves and installs everything from `pyproject.toml` / `uv.loc
 
 ## Controls
 
-- **Lookback** — `1Y · 2Y · 3Y · 5Y · 10Y · 20Y · 30Y · 50Y · MAX`. Ranges yfinance doesn't support natively (`3Y`, `20Y`, `30Y`, `50Y`) fetch `period="max"` and slice client-side, so the disk cache stays warm regardless of which lookback the user picks.
+- **Lookback** — `1M · 1Y · 2Y · 3Y · 5Y · 10Y · 20Y · 30Y · 50Y · MAX`. Ranges yfinance doesn't support natively (`3Y`, `20Y`, `30Y`, `50Y`) fetch `period="max"` and slice client-side, so the disk cache stays warm regardless of which lookback the user picks. `1M` uses hourly bars instead of daily closes.
 - **Quick tickers** — grouped checkboxes. Defaults: NVDA, SPY, URTH, GLD.
 - **Custom tickers** — comma-separated, appended to whatever's checked.
 - **Anchor** — `Start` (`y = ln(P_t / P_0)`) or `End` (`y = ln(P_t / P_T)`).
